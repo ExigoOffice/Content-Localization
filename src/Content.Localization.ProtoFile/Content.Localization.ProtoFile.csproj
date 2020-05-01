@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <RootNamespace>Content.Localization</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Content.Localization.Abstractions\Content.Localization.Abstractions.csproj" />
+    <PackageReference Include="protobuf-net" Version="2.4.6" />
+  </ItemGroup>
+
+</Project>

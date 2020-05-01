@@ -1,0 +1,251 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
+using Xunit;
+
+namespace Content.Localization.Tests
+{
+    //This allows a single set of tests to be run across multiple combination of 
+    //sources tied together
+    public sealed class ContentSourceStackTests : IDisposable
+    {
+        public static IEnumerable<object[]> ContentSources
+        {
+            get
+            {
+
+
+                var list =new List<object[]>
+                {
+                    //--> Memory over mock
+                    new object[] {"MemoryOverMock", new Func<IContentSource>(() => 
+                        new MemoryContentSource(
+                            next: DefaultMock()
+                            )
+                    )},
+
+                    //--> Proto over mock
+                    new object[] {"ProtoOverMock", new Func<IContentSource>(() =>
+                        new ProtoFileContentSource(
+                            location: _location,
+                            next:    DefaultMock()
+                            )
+                    )},
+
+
+                    //--> Json over mock
+                    new object[] {"JsonOverMock", new Func<IContentSource>(() =>
+                        new JsonFileContentSource(
+                            location: _location,
+                            next:    DefaultMock()
+                            )
+                    )},
+
+                    //--> Memory over Proto over Mock
+                    new object[] {"MemoryOverProtoOverMock", new Func<IContentSource>(() =>
+                        new MemoryContentSource(
+                            new ProtoFileContentSource(
+                                location: _location,
+                                next:    DefaultMock()
+                            )
+                        )
+                    )},
+
+                    //--> Memory over Json over Mock
+                    new object[] {"MemoryOverJsonOverMock", new Func<IContentSource>(() =>
+                        new MemoryContentSource(
+                            new JsonFileContentSource(
+                                location: _location,
+                                next:    DefaultMock()
+                            )
+                        )
+                    )},
+
+                    //--> For fun, Proto Over Json Over Mock (You would never do this in real life)
+                    new object[] {"ProtoOverJsonOverMock", new Func<IContentSource>(() =>
+                        new ProtoFileContentSource(
+                            location: _location,
+                            new JsonFileContentSource(
+                                location: _location,
+                                next:    DefaultMock()
+                            )
+                        )
+                    )}
+
+
+                };
+
+                return list;
+            }
+        }
+
+        
+
+        
+        [Theory]
+        [MemberData(nameof(ContentSources))]
+        public async Task CheckForChangesAsync_CalledTwice_Calls_Data_Once(string name, Func<IContentSource> factory)
+        {
+            //Arrange
+            var source = factory();
+            var mock   = GetMock(source);
+
+            //Act
+            _ = await source.CheckForChangesAsync();
+            var version = await source.CheckForChangesAsync();
+
+            //Assert
+            Assert.Equal(mock.ContentVersion.Version, version.Version);
+            Assert.Equal(1, mock.GetAllContentItemsInvokeCount); //we should not have invoked at all
+        }
+
+        [Theory]
+        [MemberData(nameof(ContentSources))]
+        public void GetContentItem_ColdBoot_LoadsFrom_CoreSource(string name, Func<IContentSource> factory)
+        {
+            //Arrange
+            var source = factory();
+            var mock   = GetMock(source);
+
+            //Act
+            _ = source.GetContentItem("A", "en-US");
+            var item = source.GetContentItem("A", "en-US");
+
+            //Assert
+            Assert.Equal("ValA", item);
+            Assert.Equal(1, mock.GetAllContentItemsInvokeCount); 
+        }
+
+
+        [Theory]
+        [MemberData(nameof(ContentSources))]
+        public async Task VersionChange_PropigatesUp(string name, Func<IContentSource> factory)
+        {
+            //Arrange
+            var source = factory();
+            var mock   = GetMock(source);
+
+            //Act/Assert
+            for (int i = 0; i < 10; i++)
+            { 
+                Assert.Equal("ValA", source.GetContentItem("A", "en-US"));
+                Assert.Equal(1, mock.GetAllContentItemsInvokeCount); 
+            }
+
+            //--> Version Change
+            mock.SetVersion("2.0", new DateTime(2020, 1, 1));
+            mock.SetData("en-US", new Dictionary<string, string> { { "A", "ValB"} });
+
+            await source.CheckForChangesAsync();
+
+            for (int i = 0; i < 10; i++)
+            { 
+                Assert.Equal("ValB", source.GetContentItem("A", "en-US"));            
+                Assert.Equal(2, mock.GetAllContentItemsInvokeCount); 
+            }
+
+            //--> Modified date change
+            mock.SetVersion("2.0", new DateTime(2020, 1, 2));
+            mock.SetData("en-US", new Dictionary<string, string> { { "A", "ValC"} });
+
+            await source.CheckForChangesAsync();
+
+            for (int i = 0; i < 10; i++)
+            { 
+                Assert.Equal("ValC", source.GetContentItem("A", "en-US"));            
+                Assert.Equal(3, mock.GetAllContentItemsInvokeCount); 
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ContentSources))]
+        public void GetItem_With_Updates_OverMany_Threads(string name, Func<IContentSource> factory)
+        {
+            //Arrange
+            var source = factory();
+            var mock   = GetMock(source);
+            
+            //Act/Assert
+            
+            
+            //This will blow up if there are file locking issues when those sources aren't protected
+            //behind the memory one. This demonstrates that multiple processes will not kill each other
+            Parallel.For(0, 20, t=>
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    var item = source.GetContentItem("A", "en-US");
+                    Assert.Equal("ValA", item);
+                }
+            });
+
+            
+            //Data gets updated
+            mock.SetData("en-US", new Dictionary<string, string> { { "A", "ValB"} });
+            mock.SetVersion("2.0", new DateTime(2020, 1, 1));
+
+            //Unlikely concurrent updates (simulates multiple worker processes etc)
+            Parallel.For(0,20, t=>
+            {
+                var newVersion = source.CheckForChangesAsync()
+                    .GetAwaiter()
+                    .GetResult();
+
+                Assert.Equal("2.0", newVersion.Version);
+            });
+
+            Parallel.For(0,20, t=>
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    var item = source.GetContentItem("A", "en-US");
+                    Assert.Equal("ValB", item);
+                }
+            });
+        }
+
+
+        MockContentSource GetMock(IContentSource source)
+        {
+            while (source !=null )
+            {
+                if (source is MockContentSource mockContentSource)
+                    return mockContentSource;
+
+                source = source.NextSource;
+            }
+
+            return null;
+        }
+
+        static MockContentSource DefaultMock()
+        {
+            var source = new MockContentSource();
+            source.SetVersion("1.0", new DateTime(2020, 1, 1));
+            source.SetData("en-US", new Dictionary<string, string> { { "A", "ValA"} });
+
+            return source;
+        }
+
+        //Setup/cleanup
+
+        static string _location;
+        public ContentSourceStackTests()
+        {
+            _location = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            Directory.CreateDirectory(_location);
+        }
+        
+        public void Dispose()
+        {
+            if (_location!=null)
+            {
+                Directory.Delete(_location, true);
+
+                _location = null;
+            }
+        }
+    }
+}
