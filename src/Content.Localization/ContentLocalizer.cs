@@ -17,12 +17,14 @@ namespace Content.Localization
             _defaultCultureCode = defaultCultureCode;
         }
 
-        public ContentItem GetContent(string key)
+        public ContentItem this[string name] => GetContent(name);
+
+        public ContentItem GetContent(string name)
         {
-            var item = FindContentItem(key);
+            var item = FindContentItem(name);
 
             if (item == null || !item.Enabled || !Between(DateTime.UtcNow, item.EnabledStartDate, item.EnabledEndDate) )
-                return new ContentItem { Name = key, Value = "", Enabled = true };
+                return new ContentItem { Name = name, Value = "", Enabled = true };
             
             return item;
         }
@@ -39,7 +41,13 @@ namespace Content.Localization
             if (item != null)
                 return item;
 
-            //TODO: handle non neutral 
+            if (!myCulture.IsNeutralCulture)
+            {
+                item = _source.GetContentItem(key, myCulture.TwoLetterISOLanguageName);
+
+                if (item != null)
+                    return item;
+            }
 
             // If we are not in the default culture code 
             if (myCulture.Name != _defaultCultureCode)

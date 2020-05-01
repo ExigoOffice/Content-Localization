@@ -60,6 +60,10 @@ namespace Content.Localization.Tests
             { 
                 GetAllContentItemsInvokeCount++;
             }
+
+            if (!Data.ContainsKey(cultureCode))
+                SetData(cultureCode, new Dictionary<string, string>());
+
             return Task.FromResult(Data[cultureCode].Values.AsEnumerable());                
         }
 

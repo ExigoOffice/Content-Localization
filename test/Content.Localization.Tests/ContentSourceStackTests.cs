@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -205,6 +206,51 @@ namespace Content.Localization.Tests
                 }
             });
         }
+
+
+        [Theory]
+        [MemberData(nameof(ContentSources))]
+        public void Localizer_Returns_Localized_Content(string name, Func<IContentSource> factory)
+        {
+            //Arrange
+            var source      = factory();
+            var mock        = GetMock(source);
+            var localizer   = new ContentLocalizer(source, "en-US");
+
+            mock.SetData("en-US", new Dictionary<string, string> { { "SomeKey", "Val-en-US"} });
+            mock.SetData("es-MX", new Dictionary<string, string> { { "SomeKey", "Val-es-MX"} });
+
+            //Act/Assert
+            Assert.True(string.IsNullOrEmpty(localizer["Some unknown key"]));
+
+            CultureInfo.CurrentUICulture = new CultureInfo("en-US");
+            Assert.Equal("Val-en-US", localizer["SomeKey"] );
+
+            CultureInfo.CurrentUICulture = new CultureInfo("es-MX");
+            Assert.Equal("Val-es-MX", localizer["SomeKey"] );
+
+
+            CultureInfo.CurrentUICulture = new CultureInfo("es-FR"); //we don't have this so it should resort to default
+            Assert.Equal("Val-en-US", localizer["SomeKey"] );
+        }
+
+        [Theory]
+        [MemberData(nameof(ContentSources))]
+        public void Locizer_Falls_Back_To_Two_Letter_Culture(string name, Func<IContentSource> factory)
+        {
+            //Arrange
+            var source      = factory();
+            var mock        = GetMock(source);
+            var localizer   = new ContentLocalizer(source, "en-US");
+
+            mock.SetData("es", new Dictionary<string, string> { { "SomeKey", "Val-es"} });
+
+            //Act/Assert
+            CultureInfo.CurrentUICulture = new CultureInfo("es-MX");
+            Assert.Equal("Val-es", localizer["SomeKey"] );
+        }
+
+
 
 
         MockContentSource GetMock(IContentSource source)

@@ -81,6 +81,21 @@ namespace Content.Localization.Tests
         }
 
 
+        [RequiredSecretsFact]
+        public async Task GetAllContentItems_With_NonExistantCulture_Returns_EmptyList()
+        {
+            //Arrange
+            await SetupResourceSet();
+            var source = GetApiContentSource();
+
+            //Act
+            var items = await source.GetAllContentItemsAsync("somethingWacked");
+
+            //Assert
+            Assert.Empty(items);
+        }
+
+
 
         ExigoApiClient GetApiClient()
         {
