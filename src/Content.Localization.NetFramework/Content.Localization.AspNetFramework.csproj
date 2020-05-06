@@ -6,5 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Content.Localization.Abstractions\Content.Localization.Abstractions.csproj" />
+    <ProjectReference Include="..\Content.Localization.Api\Content.Localization.Api.csproj" />
+    <ProjectReference Include="..\Content.Localization.ProtoFile\Content.Localization.ProtoFile.csproj" />
+    <ProjectReference Include="..\Content.Localization\Content.Localization.csproj" />
   </ItemGroup>
 </Project>

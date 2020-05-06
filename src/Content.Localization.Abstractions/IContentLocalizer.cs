@@ -9,6 +9,6 @@ namespace Content.Localization
         /// <summary>
         /// Fully localized and qualified based on scheduling and enabled flags
         /// </summary>
-        ContentItem GetContent(string key);
+        ContentItem this[string name] { get; }
     }
 }

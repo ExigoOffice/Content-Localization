@@ -20,13 +20,11 @@ namespace Content.Localization
 
         ContentVersion _version;
 
-        public IContentSource NextSource { get; }
+        public IContentSource NextSource { get; set; }
 
-        public MemoryContentSource(IContentSource next)
+        public MemoryContentSource()
         {
-            _version            = new ContentVersion();
             _cache              = new ConcurrentDictionary<string, AtomicLazy<ConcurrentDictionary<string, ContentItem>>>();
-            NextSource = next;
         }
 
 
@@ -51,8 +49,9 @@ namespace Content.Localization
             return _cache.GetOrAdd(cultureCode, (_) => new AtomicLazy<ConcurrentDictionary<string, ContentItem>>( 
                 () =>
                 {
-                    //If this blocks I can move into a Task.Run                                
-                    var items   = NextSource.GetAllContentItemsAsync(cultureCode)
+                    //Version may be null as we don't know the version yet
+
+                    var items   = NextSource.GetAllContentItemsAsync(cultureCode: cultureCode, requestedVersion: _version)
                                         .ConfigureAwait(false)
                                         .GetAwaiter()
                                         .GetResult(); 
@@ -72,26 +71,25 @@ namespace Content.Localization
         {
             return Task.FromResult(GetCacheForCulture(cultureCode).Values.AsEnumerable());
         }
-
-        public  Task<ContentVersion> GetVersionAsync()
-        {
-            return Task.FromResult(_version);
-        }
-
         
-        public async Task<ContentVersion> CheckForChangesAsync(ContentVersion prevVersion = null)
+        public async Task<ContentVersion> CheckForChangesAsync(ContentVersion knownVersion = null, CancellationToken token = default)
         {
-            var myVersion   = await GetVersionAsync().ConfigureAwait(false);
+            var myVersion   = _version;
             var nextVersion = await NextSource.CheckForChangesAsync(myVersion).ConfigureAwait(false);
 
-            if (myVersion.Version != nextVersion.Version || myVersion.ReleaseDate != nextVersion.ReleaseDate)
+            if (myVersion?.Version != nextVersion.Version || myVersion?.ReleaseDate != nextVersion.ReleaseDate)
             {
-                foreach (var cultureCode in await NextSource.GetCultureCodesAsync().ConfigureAwait(false))
+                foreach (var cultureCode in await NextSource.GetCultureCodesAsync(nextVersion)
+                    .ConfigureAwait(false))
                 {
-                    var items = await NextSource.GetAllContentItemsAsync(cultureCode).ConfigureAwait(false);
+                    token.ThrowIfCancellationRequested();
+
+                    var items = await NextSource.GetAllContentItemsAsync(cultureCode, nextVersion)
+                        .ConfigureAwait(false);
                     
                     //updates the memory with new values
-                    await SaveAllContentItemsAsync(cultureCode, items).ConfigureAwait(false);
+                    await SaveAllContentItemsAsync(cultureCode, items)
+                        .ConfigureAwait(false);
                 }
                 
                 _version = nextVersion;

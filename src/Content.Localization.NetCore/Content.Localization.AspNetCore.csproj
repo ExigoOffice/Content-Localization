@@ -6,11 +6,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.3" />
     <PackageReference Include="Microsoft.Extensions.Localization.Abstractions" Version="3.1.3" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Content.Localization.Abstractions\Content.Localization.Abstractions.csproj" />
+    <ProjectReference Include="..\Content.Localization.Api\Content.Localization.Api.csproj" />
+    <ProjectReference Include="..\Content.Localization.ProtoFile\Content.Localization.ProtoFile.csproj" />
+    <ProjectReference Include="..\Content.Localization\Content.Localization.csproj" />
   </ItemGroup>  
   
 </Project>

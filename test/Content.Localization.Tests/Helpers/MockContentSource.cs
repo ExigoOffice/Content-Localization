@@ -14,13 +14,13 @@ namespace Content.Localization.Tests
         {
         }
 
-        public Dictionary<string, Dictionary<string, ContentItem>> Data { get;  }
-            = new Dictionary<string, Dictionary<string, ContentItem>>();
+        public Dictionary<string,  Dictionary<string, Dictionary<string, ContentItem>>> Data { get;  }
+            = new Dictionary<string, Dictionary<string, Dictionary<string, ContentItem>>>();
 
 
         private readonly object _lockObject = new object();
 
-        public ContentVersion ContentVersion { get; set;}
+        public ContentVersion ContentVersion { get; set; }
             
         public int GetAllContentItemsInvokeCount { get; set; }
 
@@ -43,11 +43,20 @@ namespace Content.Localization.Tests
                     dict.Add(kv.Key, new ContentItem { Name = kv.Key, Value =  kv.Value, Enabled = true });
                 }
 
-                Data[cultureCode] = dict;
+                var key = $"{ContentVersion?.ReleaseDate}|{ContentVersion?.Version}";
+
+
+                if (!Data.ContainsKey(key))
+                { 
+                    Data[key] = new Dictionary<string, Dictionary<string, ContentItem>>();
+
+                }
+
+                Data[key][cultureCode] = dict;
             }
         }
 
-        public IContentSource NextSource => null;
+        public IContentSource NextSource {get; set; }
 
         public ContentItem GetContentItem(string name, string cultureCode)
         {
@@ -56,15 +65,23 @@ namespace Content.Localization.Tests
 
         public Task<IEnumerable<ContentItem>> GetAllContentItemsAsync(string cultureCode, ContentVersion prevVersion = null)
         {
+            var key = $"{ContentVersion?.ReleaseDate}|{ContentVersion?.Version}";
+
             lock(_lockObject)
             { 
                 GetAllContentItemsInvokeCount++;
+                
+                if (!Data.ContainsKey(key))
+                { 
+                    Data[key] = new Dictionary<string, Dictionary<string, ContentItem>>();
+                }
+
+                if (!Data[key].ContainsKey(cultureCode))
+                    Data[key][cultureCode] = new Dictionary<string, ContentItem>();  
             }
-
-            if (!Data.ContainsKey(cultureCode))
-                SetData(cultureCode, new Dictionary<string, string>());
-
-            return Task.FromResult(Data[cultureCode].Values.AsEnumerable());                
+            
+            return Task.FromResult(Data[key][cultureCode].Values.AsEnumerable());       
+            
         }
 
         public Task SaveAllContentItemsAsync(string cultureCode, IEnumerable<ContentItem> items)
@@ -77,14 +94,16 @@ namespace Content.Localization.Tests
             return Task.FromResult(ContentVersion);
         }
 
-        public Task<ContentVersion> CheckForChangesAsync(ContentVersion prevVersion = null)
+        public Task<ContentVersion> CheckForChangesAsync(ContentVersion prevVersion = null, CancellationToken token=default)
         {
             return GetVersionAsync();
         }
 
         public Task<IEnumerable<string>> GetCultureCodesAsync(ContentVersion prevVersion = null)
         {
-            return Task.FromResult(Data.Keys.AsEnumerable());
+            var key = $"{ContentVersion?.ReleaseDate}|{ContentVersion?.Version}";
+
+            return Task.FromResult(Data[key].Keys.AsEnumerable());
         }
     }
 }

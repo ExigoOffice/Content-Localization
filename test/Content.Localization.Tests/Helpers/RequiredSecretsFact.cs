@@ -11,7 +11,7 @@ namespace Content.Localization.Tests
         public RequiredSecretsFact()
         {
             var builder = new ConfigurationBuilder()
-                .AddUserSecrets<ApiContentSourceTests>();
+                .AddUserSecrets<RequiredSecretsFact>();
             var configuration = builder.Build();
             if (configuration["ApiLoginName"]==null)
             {

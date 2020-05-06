@@ -41,7 +41,7 @@ namespace Content.Localization
             if (item != null)
                 return item;
 
-            if (!myCulture.IsNeutralCulture)
+            if (!myCulture.IsNeutralCulture && myCulture.Name != _defaultCultureCode)
             {
                 item = _source.GetContentItem(key, myCulture.TwoLetterISOLanguageName);
 

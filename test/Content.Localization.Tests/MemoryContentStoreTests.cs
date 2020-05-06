@@ -18,7 +18,7 @@ namespace Content.Localization.Tests
             inner.Setup(o=>o.GetAllContentItemsAsync("en-US",null))
                 .ReturnsAsync(new List<ContentItem> { new ContentItem { Name = "A", Value = "ValA", Enabled = true  } });
 
-            var memoryStore = new MemoryContentSource(inner.Object);
+            var memoryStore = new MemoryContentSource { NextSource=inner.Object };
 
             //Act
             var item1 = memoryStore.GetContentItem("A", "en-US");
@@ -42,7 +42,7 @@ namespace Content.Localization.Tests
                 .Throws(new Exception("Test Error"))
                 .ReturnsAsync(new List<ContentItem> { new ContentItem { Name = "A", Value = "ValA", Enabled = true  } });
 
-            var memoryStore = new MemoryContentSource(inner.Object);
+            var memoryStore = new MemoryContentSource { NextSource = inner.Object };
 
             //Act
             Assert.ThrowsAny<Exception>(() => memoryStore.GetContentItem("A", "en-US") );
@@ -65,7 +65,7 @@ namespace Content.Localization.Tests
                     return new List<ContentItem> { new ContentItem { Name = "A", Value = "ValA", Enabled = true  } }; 
                     });
 
-            var memoryStore = new MemoryContentSource(inner.Object);
+            var memoryStore = new MemoryContentSource { NextSource = inner.Object };
 
             //Act
             Parallel.For(0, 20, t=>
@@ -95,7 +95,7 @@ namespace Content.Localization.Tests
                     return new List<ContentItem> { new ContentItem { Name = "A", Value = "ValA", Enabled = true  } }; 
                     });
 
-            var memoryStore = new MemoryContentSource(inner.Object);
+            var memoryStore = new MemoryContentSource { NextSource = inner.Object };
 
             //Act
 

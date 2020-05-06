@@ -6,7 +6,7 @@ namespace Content.Localization
 {
     public class ApiContentSourceOptions
     {
-        public Uri ApiUri { get; set; }
+        public Uri ApiUri { get; set; } 
         public string Company { get; set; }
         public string LoginName { get; set; }
         public string Password { get; set; }

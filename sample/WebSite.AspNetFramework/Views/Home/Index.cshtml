@@ -1,0 +1,28 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Tests</h2>
+
+@Html.Raw(Resources.psttest.Banner)
+<br />
+@Html.Raw(Resources.psttest.Number)
+<br />
+<img src="@Html.Raw(Resources.psttest.ImageTest)" />
+<br />
+@Html.Raw(Resources.psttest.CheckBox)
+<br />
+@Html.Raw(Resources.psttest.DateField)
+<br />
+@Html.Raw(Resources.psttest.Decimal)
+<br />
+@Html.Raw(Resources.psttest.DropDown)
+<br />
+@Html.Raw(Resources.psttest.TextSample)
+<br />
+@Html.Raw(Resources.psttest.Widget)
+
+<br />
+
+@Html.Raw(Content.Localization.Localizer.Content["AddItemsText"]?.Value)

@@ -40,7 +40,7 @@ namespace Content.Localization.Tests
             await SetupResourceSet();
 
             //Arrange
-            var source = new MemoryContentSource(GetApiContentSource());
+            var source = new MemoryContentSource { NextSource = GetApiContentSource() };
 
             //Assert
             Assert.Equal("ValA", source.GetContentItem("A", "en-US"));
@@ -73,7 +73,7 @@ namespace Content.Localization.Tests
             var source = GetApiContentSource();
 
             //Act
-            var items = await source.GetAllContentItemsAsync("en-US");
+            var items = await source.GetAllContentItemsAsync("en-US", null);
 
             //Assert
             Assert.Contains(items, i => i.Name == "A" );
@@ -89,7 +89,7 @@ namespace Content.Localization.Tests
             var source = GetApiContentSource();
 
             //Act
-            var items = await source.GetAllContentItemsAsync("somethingWacked");
+            var items = await source.GetAllContentItemsAsync("somethingWacked", null);
 
             //Assert
             Assert.Empty(items);
@@ -109,7 +109,7 @@ namespace Content.Localization.Tests
 
         ApiContentSource GetApiContentSource()
         {
-            return new ApiContentSource(_httpClient, new ApiContentSourceOptions
+            return new ApiContentSource(() => _httpClient, new ApiContentSourceOptions
             {
                  ApiUri             = _apiUri,
                  Company            = _configuration["ApiCompany"],

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Content.Localization
@@ -13,12 +14,12 @@ namespace Content.Localization
         private const string _errorGettingFile = "Error Getting File";
         private readonly string _location;
 
-        public IContentSource NextSource { get; }
+        public IContentSource NextSource { get; set; }
 
-        public ProtoFileContentSource(string location, IContentSource next)
+        public ProtoFileContentSource(string location)
         {
             _location = location;
-            NextSource = next;
+            
         }
 
         public string GetCultureFileName(string cultureCode)
@@ -32,8 +33,13 @@ namespace Content.Localization
         }
         
 
-        public async Task<IEnumerable<ContentItem>> GetAllContentItemsAsync(string cultureCode, ContentVersion currentVersion=null)
+        public async Task<IEnumerable<ContentItem>> GetAllContentItemsAsync(string cultureCode, ContentVersion requestedVersion)
         {
+
+            if (requestedVersion == null)
+                requestedVersion = await GetVersionAsync()
+                    .ConfigureAwait(false);
+
             string fileName = GetCultureFileName(cultureCode);
 
             var tryCount = 100;
@@ -44,8 +50,11 @@ namespace Content.Localization
                 {
                     if (!File.Exists(fileName) && NextSource !=null)
                     {
-                        var items = await NextSource.GetAllContentItemsAsync(cultureCode).ConfigureAwait(false);
-                        await SaveAllContentItemsAsync(cultureCode, items).ConfigureAwait(false);
+                        var items = await NextSource.GetAllContentItemsAsync(cultureCode, requestedVersion)
+                            .ConfigureAwait(false);
+                        
+                        await SaveAllContentItemsAsync(cultureCode, items)
+                            .ConfigureAwait(false);
                     }
 
                     using var file  = File.OpenRead(fileName);
@@ -66,12 +75,17 @@ namespace Content.Localization
             #pragma warning restore CA1303 // Do not pass literals as localized parameters
         }
 
+        
         public Task SaveAllContentItemsAsync(string cultureCode, IEnumerable<ContentItem> items)
         {
             string fileName = GetCultureFileName(cultureCode);
             
             try
             { 
+                //TODO: save to temp file
+                if (!Directory.Exists(_location))
+                    Directory.CreateDirectory(_location);
+
                 using var file = File.Create(fileName);
                 Serializer.Serialize(file, items);
             }
@@ -112,27 +126,33 @@ namespace Content.Localization
                 }
             }
 
+            return null;
 
-            return new ContentVersion();
         }
 
-        public async Task<ContentVersion> CheckForChangesAsync(ContentVersion version)
+        public async Task<ContentVersion> CheckForChangesAsync(ContentVersion knownVersion, CancellationToken token=default)
         {
             var myVersion    = await GetVersionAsync().ConfigureAwait(false);
             var nextVersion   = await NextSource.CheckForChangesAsync(myVersion).ConfigureAwait(false);
 
-            if (myVersion.Version != nextVersion.Version || myVersion.ReleaseDate != nextVersion.ReleaseDate)
+            if (myVersion?.Version != nextVersion.Version || myVersion?.ReleaseDate != nextVersion.ReleaseDate)
             {
-                foreach (var cultureCode in await NextSource.GetCultureCodesAsync().ConfigureAwait(false))
+                foreach (var cultureCode in await NextSource.GetCultureCodesAsync(nextVersion)
+                    .ConfigureAwait(false))
                 {
-                    var items = await NextSource.GetAllContentItemsAsync(cultureCode).ConfigureAwait(false);
+                    token.ThrowIfCancellationRequested();
                     
-                    await SaveAllContentItemsAsync(cultureCode, items).ConfigureAwait(false);
+                    var items = await NextSource.GetAllContentItemsAsync(cultureCode, nextVersion)
+                        .ConfigureAwait(false);
+                    
+                    await SaveAllContentItemsAsync(cultureCode, items)
+                        .ConfigureAwait(false);
                 }
 
                 //TODO: possibly clean up any cultures we've deleted from the next source? 
                 
-                await SaveVersionAsync(nextVersion).ConfigureAwait(false);
+                await SaveVersionAsync(nextVersion)
+                    .ConfigureAwait(false);
             }
 
             return nextVersion;
@@ -161,7 +181,7 @@ namespace Content.Localization
         public ContentItem GetContentItem(string name, string cultureCode)
         {
             //This is only for unit tests
-            return GetAllContentItemsAsync(cultureCode)
+            return GetAllContentItemsAsync(cultureCode, GetVersionAsync().GetAwaiter().GetResult())
                 .GetAwaiter()
                 .GetResult()
                 .FirstOrDefault(i=>i.Name == name);

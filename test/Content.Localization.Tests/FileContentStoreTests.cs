@@ -43,12 +43,12 @@ namespace Content.Localization.Tests
                 }
             };
 
-            var store = new ProtoFileContentSource(_location, new MockContentSource());
+            var store = new ProtoFileContentSource(_location) { NextSource = new MockContentSource() };
 
             //Act
             await store.SaveAllContentItemsAsync("en-US", list);
 
-            var check = (await store.GetAllContentItemsAsync("en-Us")).ToArray();
+            var check = (await store.GetAllContentItemsAsync("en-Us", null)).ToArray();
 
             //Assert
             for (int i = 0; i < list.Count; i++)
@@ -76,12 +76,12 @@ namespace Content.Localization.Tests
                 }
             };
 
-            var store = new JsonFileContentSource(_location, null);
+            var store = new JsonFileContentSource(_location);
 
             //Act
             await store.SaveAllContentItemsAsync("en-US", list);
 
-            var check = (await store.GetAllContentItemsAsync("en-Us")).ToArray();
+            var check = (await store.GetAllContentItemsAsync("en-Us", null)).ToArray();
 
             //Assert
             for (int i = 0; i < list.Count; i++)
@@ -120,8 +120,8 @@ namespace Content.Localization.Tests
             }
 
 
-            var jsonStore = new JsonFileContentSource(_location, null);
-            var protoStore = new ProtoFileContentSource(_location, new MockContentSource());
+            var jsonStore = new JsonFileContentSource(_location);
+            var protoStore = new ProtoFileContentSource(_location) { NextSource =  new MockContentSource() };
 
 
             for (int i = 0; i < 3; i++)
@@ -143,14 +143,14 @@ namespace Content.Localization.Tests
             for (int i = 0; i < 3; i++)
             {
                 var swJson = Stopwatch.StartNew();
-                _ = await jsonStore.GetAllContentItemsAsync(cultureCode);
+                _ = await jsonStore.GetAllContentItemsAsync(cultureCode, null);
                 swJson.Stop();
                 var jsonFile = new FileInfo(jsonStore.GetCultureFileName(cultureCode));
                 _output.WriteLine($"Json Load at {swJson.ElapsedMilliseconds:#,#}. ValueSize: {resourceSize:#,#}, Count: {recordCount:#,#}, FileSize: {jsonFile.Length:#,#}");
 
 
                 var swProto = Stopwatch.StartNew();
-                _ = await protoStore.GetAllContentItemsAsync(cultureCode);
+                _ = await protoStore.GetAllContentItemsAsync(cultureCode, null);
                 swProto.Stop();
                 var protoFile = new FileInfo(protoStore.GetCultureFileName(cultureCode));
                 _output.WriteLine($"Proto Load at {swProto.ElapsedMilliseconds:#,#}. ValueSize: {resourceSize:#,#}, Count: {recordCount:#,#}, FileSize: {protoFile.Length::#,#}");

@@ -22,57 +22,52 @@ namespace Content.Localization.Tests
                 {
                     //--> Memory over mock
                     new object[] {"MemoryOverMock", new Func<IContentSource>(() => 
-                        new MemoryContentSource(
-                            next: DefaultMock()
-                            )
+                        new MemoryContentSource {
+                            NextSource =  DefaultMock()
+                        }
                     )},
 
                     //--> Proto over mock
                     new object[] {"ProtoOverMock", new Func<IContentSource>(() =>
-                        new ProtoFileContentSource(
-                            location: _location,
-                            next:    DefaultMock()
-                            )
+                        new ProtoFileContentSource(_location) { 
+                            NextSource = DefaultMock()
+                        }
+                           
                     )},
 
 
                     //--> Json over mock
                     new object[] {"JsonOverMock", new Func<IContentSource>(() =>
-                        new JsonFileContentSource(
-                            location: _location,
-                            next:    DefaultMock()
-                            )
+                        new JsonFileContentSource(_location) {
+                            NextSource = DefaultMock() 
+                        }
                     )},
 
                     //--> Memory over Proto over Mock
                     new object[] {"MemoryOverProtoOverMock", new Func<IContentSource>(() =>
-                        new MemoryContentSource(
-                            new ProtoFileContentSource(
-                                location: _location,
-                                next:    DefaultMock()
-                            )
-                        )
+                        new MemoryContentSource {
+                            NextSource = new ProtoFileContentSource(_location) {
+                                NextSource =  DefaultMock()
+                            }
+                        }
                     )},
 
                     //--> Memory over Json over Mock
                     new object[] {"MemoryOverJsonOverMock", new Func<IContentSource>(() =>
-                        new MemoryContentSource(
-                            new JsonFileContentSource(
-                                location: _location,
-                                next:    DefaultMock()
-                            )
-                        )
+                        new MemoryContentSource {
+                            NextSource = new JsonFileContentSource(_location) {
+                                NextSource =   DefaultMock()
+                            }
+                        }
                     )},
 
                     //--> For fun, Proto Over Json Over Mock (You would never do this in real life)
                     new object[] {"ProtoOverJsonOverMock", new Func<IContentSource>(() =>
-                        new ProtoFileContentSource(
-                            location: _location,
-                            new JsonFileContentSource(
-                                location: _location,
-                                next:    DefaultMock()
-                            )
-                        )
+                        new ProtoFileContentSource(_location) {
+                            NextSource = new JsonFileContentSource(_location) {
+                                NextSource = DefaultMock()
+                            }
+                        }
                     )}
 
 
@@ -184,8 +179,9 @@ namespace Content.Localization.Tests
 
             
             //Data gets updated
-            mock.SetData("en-US", new Dictionary<string, string> { { "A", "ValB"} });
             mock.SetVersion("2.0", new DateTime(2020, 1, 1));
+            mock.SetData("en-US", new Dictionary<string, string> { { "A", "ValB"} });
+
 
             //Unlikely concurrent updates (simulates multiple worker processes etc)
             Parallel.For(0,20, t=>
@@ -217,8 +213,8 @@ namespace Content.Localization.Tests
             var mock        = GetMock(source);
             var localizer   = new ContentLocalizer(source, "en-US");
 
-            mock.SetData("en-US", new Dictionary<string, string> { { "SomeKey", "Val-en-US"} });
-            mock.SetData("es-MX", new Dictionary<string, string> { { "SomeKey", "Val-es-MX"} });
+            mock.SetData("en-US", new Dictionary<string, string> { { "SomeKey", "Val-en-US" } });
+            mock.SetData("es-MX", new Dictionary<string, string> { { "SomeKey", "Val-es-MX" } });
 
             //Act/Assert
             Assert.True(string.IsNullOrEmpty(localizer["Some unknown key"]));
