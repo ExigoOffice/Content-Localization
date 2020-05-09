@@ -17,6 +17,8 @@ namespace Content.Localization
 
         internal Lazy<ContentUpdater> UpdaterFactory {get; set;}
 
+        internal IContentClassGenerator ClassGenerator { get; set; }
+
         internal IContentLogger ContentLogger { get; set;} = new NullContentLogger();
 
         public IContentBuilder AddContentSource<TContentSource>(Func<TContentSource> factory) where TContentSource : IContentSource

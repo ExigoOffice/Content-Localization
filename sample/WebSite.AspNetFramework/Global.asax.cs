@@ -19,12 +19,12 @@ namespace WebSite.AspNetFramework
             AreaRegistration.RegisterAllAreas();
             RouteConfig.RegisterRoutes(RouteTable.Routes);
 
-
+            /*
             psttest.Content = new LocalizerConfiguration()
                 .AddMemorySource()
                 .AddJsonFileSource(o=> 
                 { 
-                    o.Location      = Server.MapPath("~/App_Data/Json");
+                    o.Location          = Server.MapPath("~/App_Data/Json");
                 })
                 .AddApiSource(o=> 
                 {
@@ -35,11 +35,19 @@ namespace WebSite.AspNetFramework
                     o.SubscriptionKey   = "*";
                     o.EnvironmentCode   = "prod";
                 })
-                .AddUpdater(TimeSpan.FromSeconds(5))
+                .AddUpdater(o=> 
+                {
+                    o.Frequency         = TimeSpan.FromSeconds(5);
+                })
+                .AddClassGenerator(o=>
+                {
+                    o.ClassName         = "psttest";
+                    o.Location          = Server.MapPath("~/Localization");
+                })
                 .BuildLocalizer();
-         
+            */
             
-            Localizer.Content  = new LocalizerConfiguration()
+            psttest.Content  = new LocalizerConfiguration()
                 .AddMemorySource()
                 .AddProtoFileSource(o=> 
                 { 
@@ -48,14 +56,25 @@ namespace WebSite.AspNetFramework
                 .AddApiSource(o=> 
                 {
                     o.ApiUri            = new Uri("https://exigodemov6-api.exigo.com/3.0/");
-                    o.LoginName         = "*";
-                    o.Password          = "*";
-                    o.Company           = "*";
-                    o.SubscriptionKey   = "*";
+                    o.LoginName         = "unittest";
+                    o.Password          = "****";
+                    o.Company           = "exigodemov6";
+                    o.SubscriptionKey   = "psttest";
                     o.EnvironmentCode   = "prod";
                 })
-                .AddUpdater(TimeSpan.FromSeconds(5))
+                .AddUpdater(o=> 
+                {
+                    o.Frequency         = TimeSpan.FromSeconds(5);
+                })
+                .AddClassGenerator(o=>
+                {
+                    o.ClassName         = "psttest";
+                    o.Location          = Server.MapPath("~/Localization");
+                })
                 .BuildLocalizer();
+
+            Localizer.Content = psttest.Content;
+
 
         }
     }

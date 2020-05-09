@@ -5,6 +5,7 @@
     <TargetFrameworks>netcoreapp3.1;net461</TargetFrameworks>
 
     <IsPackable>false</IsPackable>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

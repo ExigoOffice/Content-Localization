@@ -10,14 +10,23 @@ namespace Content.Localization
     {
         private readonly CancellationTokenSource _stoppingCts = new CancellationTokenSource();
         private readonly IContentSource _contentSource;
+        private readonly TimeSpan _startupDelay;
         private readonly TimeSpan _interval;
         private readonly IContentLogger _logger;
-
-        public ContentUpdater(IContentSource contentSource, TimeSpan interval, IContentLogger logger)
+        private readonly IContentClassGenerator _classGenerator;
+        public ContentUpdater(
+            IContentSource contentSource, 
+            TimeSpan startupDelay,
+            TimeSpan interval, 
+            IContentLogger logger, 
+            IContentClassGenerator classGenerator
+            )
         {
             _contentSource = contentSource;
+            _startupDelay = startupDelay;
             _interval = interval;
             _logger = logger;
+            _classGenerator = classGenerator;
         }
 
         public Task UpdaterLoopTask { get; set; }
@@ -29,16 +38,19 @@ namespace Content.Localization
 
         async Task ProcessLoopAsync()
         {
-            var r = new Random();
-            await Task.Delay(TimeSpan.FromSeconds(r.Next(5, 45)))
+            await Task.Delay(_startupDelay)
                 .ConfigureAwait(false);
-
+             
             while (!_stoppingCts.IsCancellationRequested)
             {
                 try
                 {
-                    await _contentSource.CheckForChangesAsync()
+                    var version = await _contentSource.CheckForChangesAsync()
                         .ConfigureAwait(false);    
+                                             
+                    if (_classGenerator!=null)
+                        await _classGenerator.GenerateAndSaveIfChangedAsync(version, _contentSource)
+                            .ConfigureAwait(false);
                 }
                 catch(Exception ex)
                 {

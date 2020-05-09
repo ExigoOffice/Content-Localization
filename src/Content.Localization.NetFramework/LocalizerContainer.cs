@@ -17,9 +17,8 @@ namespace Content.Localization
             _contentLocalizer = contentLocalizer;
             _updater = updater;
         }
-
-        public ContentItem this[string name] => _contentLocalizer[name];
-
+        public string this[string name] => _contentLocalizer[name];
+        public ContentItem Localize(string name) => Localize(name);
         public void Dispose()
         {
             _updater?.StopAsync().GetAwaiter().GetResult();

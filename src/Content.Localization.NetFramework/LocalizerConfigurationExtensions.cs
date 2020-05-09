@@ -36,16 +36,51 @@ namespace Content.Localization
         }
 
 
-        public static IContentBuilder AddUpdater(this IContentBuilder builder, TimeSpan frequency)
+        public static IContentBuilder AddUpdater(this IContentBuilder builder, Action<ContentUpdaterOptions> options)
         {
             if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            var o = new ContentUpdaterOptions();
+            options(o);
+
             var ourBuilder = (LocalizerConfiguration)builder;
 
-            ourBuilder.UpdaterFactory = new Lazy<ContentUpdater>( () => new ContentUpdater(ourBuilder.Sources[0], frequency, ourBuilder.ContentLogger ));
+            ourBuilder.UpdaterFactory = new Lazy<ContentUpdater>( () => new ContentUpdater(
+                ourBuilder.Sources[0], 
+                o.StartupDelay,
+                o.Frequency, 
+                ourBuilder.ContentLogger,
+                ourBuilder.ClassGenerator
+                ));
+
+            return builder;
+        }
+
+
+
+
+
+        public static IContentBuilder AddClassGenerator(this IContentBuilder builder, Action<ContentClassGeneratorOptions> options)
+        {
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            var ourBuilder = (LocalizerConfiguration)builder;
+            
+            var o = new ContentClassGeneratorOptions();
+            options(o);
+
+            ourBuilder.ClassGenerator = new  ContentClassGenerator(o);
 
             return builder;
         }

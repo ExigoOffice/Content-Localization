@@ -117,8 +117,9 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Localization\OurTest.cs" />
+    <Compile Include="Localization\psttest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="psttest.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\web.config" />

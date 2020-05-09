@@ -11,13 +11,16 @@ namespace Content.Localization
         private readonly IContentSource _source;
         private readonly string _defaultCultureCode;
 
+
         public ContentLocalizer(IContentSource source, string defaultCultureCode)
         {
             _source = source;
             _defaultCultureCode = defaultCultureCode;
         }
 
-        public ContentItem this[string name] => GetContent(name);
+        public string this[string name] => GetContent(name);
+
+        public ContentItem Localize(string name) => GetContent(name);
 
         public ContentItem GetContent(string name)
         {
@@ -67,6 +70,7 @@ namespace Content.Localization
 
             return input > date1 && input < date2;
         }
+
 
     }
 }

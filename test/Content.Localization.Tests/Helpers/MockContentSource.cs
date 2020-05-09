@@ -20,16 +20,17 @@ namespace Content.Localization.Tests
 
         private readonly object _lockObject = new object();
 
-        public ContentVersion ContentVersion { get; set; }
+        private ContentVersion _version;
+
+        public ContentVersion ContentVersion { get { lock(_lockObject) { return _version; } } set { lock(_lockObject) { _version = value; } } }
             
         public int GetAllContentItemsInvokeCount { get; set; }
 
+
+
         public void SetVersion(string version, DateTime modifiedDate)
         {
-            lock(_lockObject)
-            { 
-                ContentVersion = new ContentVersion {  Version = version, ReleaseDate = modifiedDate };
-            }
+            ContentVersion = new ContentVersion {  Version = version, ReleaseDate = modifiedDate };
         }
 
         public void SetData(string cultureCode, Dictionary<string, string> values)
@@ -55,6 +56,35 @@ namespace Content.Localization.Tests
                 Data[key][cultureCode] = dict;
             }
         }
+
+        public void SetData(ContentVersion version, string cultureCode, Dictionary<string, string> values)
+        {
+            lock(_lockObject)
+            { 
+                var dict = new Dictionary<string, ContentItem>();
+
+                foreach (var kv in values)
+                {
+                    dict.Add(kv.Key, new ContentItem { Name = kv.Key, Value =  kv.Value, Enabled = true });
+                }
+
+                var key = $"{version?.ReleaseDate}|{version?.Version}";
+
+
+                if (!Data.ContainsKey(key))
+                { 
+                    Data[key] = new Dictionary<string, Dictionary<string, ContentItem>>();
+
+                }
+
+                Data[key][cultureCode] = dict;
+
+                _version = version;
+            }
+        }
+
+
+
 
         public IContentSource NextSource {get; set; }
 
