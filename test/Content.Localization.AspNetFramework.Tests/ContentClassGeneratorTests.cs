@@ -92,13 +92,19 @@ namespace Content.Localization.AspNetFramework.Tests
             var source = new MockContentSource();
             source.SetData("en-US", new Dictionary<string, string> { { "A", "ValA"} });
 
+            await Task.Delay(100);
+
             //Act
             await generator.GenerateAndSaveIfChangedAsync(new ContentVersion {  Version="1.0", ReleaseDate = new DateTime(2020,1,1)}, source);
             var date1 = File.GetLastWriteTime(generator.GetFullFileName());
 
+            await Task.Delay(100);
+
             //same version
             await generator.GenerateAndSaveIfChangedAsync(new ContentVersion {  Version="1.0", ReleaseDate = new DateTime(2020,1,1)}, source);
             var date2 = File.GetLastWriteTime(generator.GetFullFileName());
+
+            await Task.Delay(100);
 
             //new version
             await generator.GenerateAndSaveIfChangedAsync(new ContentVersion {  Version="2.0", ReleaseDate = new DateTime(2020,1,1)}, source);
