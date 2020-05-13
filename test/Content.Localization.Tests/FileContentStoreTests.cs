@@ -43,7 +43,7 @@ namespace Content.Localization.Tests
                 }
             };
 
-            var store = new ProtoFileContentSource(_location) { NextSource = new MockContentSource() };
+            var store = new ProtoFileContentSource(_location, new NullContentLogger()) { NextSource = new MockContentSource() };
 
             //Act
             await store.SaveAllContentItemsAsync("en-US", list);
@@ -121,7 +121,7 @@ namespace Content.Localization.Tests
 
 
             var jsonStore = new JsonFileContentSource(_location);
-            var protoStore = new ProtoFileContentSource(_location) { NextSource =  new MockContentSource() };
+            var protoStore = new ProtoFileContentSource(_location, new NullContentLogger()) { NextSource =  new MockContentSource() };
 
 
             for (int i = 0; i < 3; i++)

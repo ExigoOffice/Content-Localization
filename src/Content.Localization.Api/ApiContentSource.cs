@@ -1,6 +1,7 @@
 ﻿using Exigo.Api.Client;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
@@ -14,12 +15,13 @@ namespace Content.Localization
     {
         private readonly Func<HttpClient>           _httpClientFactory;
         private readonly ApiContentSourceOptions    _options;
+        private readonly IContentLogger _logger;
 
-        public ApiContentSource(Func<HttpClient> httpClientFactory, ApiContentSourceOptions options  )
+        public ApiContentSource(Func<HttpClient> httpClientFactory, ApiContentSourceOptions options, IContentLogger logger  )
         {
             _httpClientFactory = httpClientFactory;
             _options    = options ?? throw new ArgumentNullException(nameof(options));
-
+            _logger = logger;
         }
 
 
@@ -59,6 +61,7 @@ namespace Content.Localization
         public async Task<IEnumerable<ContentItem>> GetAllContentItemsAsync(string cultureCode, ContentVersion requestedVersion)
         {
             //if the configured version is null, we could be in a clean load on demand path, where we don't know the version yet
+            var sw = Stopwatch.StartNew();
             if (requestedVersion == null)
             {
                 requestedVersion = await CheckForChangesAsync()
@@ -74,6 +77,8 @@ namespace Content.Localization
 
             var res     = await CreateApiClient().GetResourceSetItemsAsync(req).ConfigureAwait(false);
 
+            _logger.LogInformation("Api GetResourceSetItems. Returned {Count} items in {Duration}", res.Items.Length, sw.Elapsed);
+
             return new List<ContentItem>( res.Items.Select(o=> new ContentItem
             {
                 Name                    = o.ResourceName,
@@ -86,7 +91,7 @@ namespace Content.Localization
 
         public async Task<ContentVersion> CheckForChangesAsync(ContentVersion currentVersion = null, CancellationToken token=default)
         {
-
+            var sw = Stopwatch.StartNew();
             var req = new ResourceSetCheckInRequest
             {
                 ComponentVersion        = this.GetType().Assembly.GetName().Version?.ToString(),
@@ -99,6 +104,8 @@ namespace Content.Localization
             };
 
             var res = await CreateApiClient().ResourceSetCheckInAsync(req).ConfigureAwait(false);
+
+            _logger.LogVerbose("Api Checkin in {Duration}", sw.Elapsed);
 
             return new ContentVersion {  Version = res.Version, ReleaseDate = res.ReleaseDate };
         }

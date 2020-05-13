@@ -19,7 +19,9 @@ namespace Content.Localization
 
         internal IContentClassGenerator ClassGenerator { get; set; }
 
-        internal IContentLogger ContentLogger { get; set;} = new NullContentLogger();
+        public IContentLogger ContentLogger { get; set; } = new NullContentLogger();
+
+        
 
         public IContentBuilder AddContentSource<TContentSource>(Func<TContentSource> factory) where TContentSource : IContentSource
         {
@@ -30,6 +32,17 @@ namespace Content.Localization
 
             Sources.Add( factory() );
 
+            return this;
+        }
+
+        public IContentBuilder AddLogger<TLogger>(Func<TLogger> factory) where TLogger : IContentLogger
+        {
+            if (factory is null)
+            {
+                throw new ArgumentNullException(nameof(factory));
+            }
+
+            ContentLogger = factory();
             return this;
         }
     }

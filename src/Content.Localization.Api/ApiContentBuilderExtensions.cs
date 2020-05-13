@@ -28,11 +28,8 @@ namespace Content.Localization
                throw new Exception("SubscriptionKey is expected for Api Calls");
             #pragma warning restore CA1303 // Do not pass literals as localized parameters
 
-
-            //We need a version of this which uses the HtmlClientFactory
-            
-
-            builder.AddContentSource(() => new ApiContentSource(() => _cachedClient, o));
+            //We need a version of this which uses the HttpClientFactory
+            builder.AddContentSource(() => new ApiContentSource(() => _cachedClient, o, builder.ContentLogger));
 
             return builder;
         }

@@ -3,6 +3,8 @@ using Content.Localization;
 
 using Resources;
 
+using Serilog;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -51,7 +53,7 @@ namespace WebSite.AspNetFramework
                 .AddMemorySource()
                 .AddProtoFileSource(o=> 
                 { 
-                    o.Location      = Server.MapPath("~/App_Data/Proto");
+                    o.Location          = Server.MapPath("~/App_Data/Proto");
                 })
                 .AddApiSource(o=> 
                 {
@@ -71,6 +73,7 @@ namespace WebSite.AspNetFramework
                     o.ClassName         = "psttest";
                     o.Location          = Server.MapPath("~/Localization");
                 })
+                .AddSerilog()
                 .BuildLocalizer();
 
             Localizer.Content = psttest.Content;

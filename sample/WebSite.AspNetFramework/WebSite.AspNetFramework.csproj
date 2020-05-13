@@ -50,6 +50,9 @@
       <HintPath>..\..\packages\Microsoft.Configuration.ConfigurationBuilders.UserSecrets.2.0.0\lib\Net471\Microsoft.Configuration.ConfigurationBuilders.UserSecrets.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Serilog, Version=2.0.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Serilog.2.9.0\lib\net46\Serilog.dll</HintPath>
+    </Reference>
     <Reference Include="System.Web.DynamicData" />
     <Reference Include="System.Web.Entity" />
     <Reference Include="System.Web.ApplicationServices" />
@@ -168,6 +171,10 @@
     <ProjectReference Include="..\..\src\Content.Localization.ProtoFile\Content.Localization.ProtoFile.csproj">
       <Project>{75936c77-6f74-46fe-b99c-29624cc3abe1}</Project>
       <Name>Content.Localization.ProtoFile</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\Content.Localization.Serilog\Content.Localization.Serilog.csproj">
+      <Project>{6c456e70-70cb-4af9-89bf-0e6d2d0c91dc}</Project>
+      <Name>Content.Localization.Serilog</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\src\Content.Localization\Content.Localization.csproj">
       <Project>{17167b04-aed4-4849-91bd-4bfdd6e4fdf0}</Project>

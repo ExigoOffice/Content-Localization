@@ -31,6 +31,7 @@ namespace Content.Localization
         {
             
             public IServiceCollection Services { get; }
+            public IContentLogger ContentLogger { get; set; } = new NullContentLogger();
 
             public NetCoreLocalizationBuilder(IServiceCollection services)
             {
@@ -43,6 +44,11 @@ namespace Content.Localization
             }
 
             public IContentBuilder AddContentSource<TContentSource>(Func<TContentSource> factory) where TContentSource : IContentSource
+            {
+                throw new NotImplementedException();
+            }
+
+            public IContentBuilder AddLogger<TLogger>(Func<TLogger> factory) where TLogger : IContentLogger
             {
                 throw new NotImplementedException();
             }

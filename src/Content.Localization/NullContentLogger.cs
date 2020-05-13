@@ -8,12 +8,14 @@ namespace Content.Localization
     {
         public void LogError(Exception ex, string format, params object[] args)
         {
-            
+        }
+
+        public void LogInformation(string format, params object[] args)
+        {
         }
 
         public void LogVerbose(string format, params object[] args)
         {
-            
         }
     }
 }

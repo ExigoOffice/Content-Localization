@@ -29,7 +29,7 @@ namespace Content.Localization.Tests
 
                     //--> Proto over mock
                     new object[] {"ProtoOverMock", new Func<IContentSource>(() =>
-                        new ProtoFileContentSource(_location) { 
+                        new ProtoFileContentSource(_location, new NullContentLogger()) { 
                             NextSource = DefaultMock()
                         }
                            
@@ -46,7 +46,7 @@ namespace Content.Localization.Tests
                     //--> Memory over Proto over Mock
                     new object[] {"MemoryOverProtoOverMock", new Func<IContentSource>(() =>
                         new MemoryContentSource {
-                            NextSource = new ProtoFileContentSource(_location) {
+                            NextSource = new ProtoFileContentSource(_location, new NullContentLogger()) {
                                 NextSource =  DefaultMock()
                             }
                         }
@@ -63,7 +63,7 @@ namespace Content.Localization.Tests
 
                     //--> For fun, Proto Over Json Over Mock (You would never do this in real life)
                     new object[] {"ProtoOverJsonOverMock", new Func<IContentSource>(() =>
-                        new ProtoFileContentSource(_location) {
+                        new ProtoFileContentSource(_location, new NullContentLogger()) {
                             NextSource = new JsonFileContentSource(_location) {
                                 NextSource = DefaultMock()
                             }

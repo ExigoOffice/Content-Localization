@@ -18,7 +18,7 @@ namespace Content.Localization
                 throw new ArgumentNullException(nameof(location));
             }
 
-            builder.AddContentSource(() => new ProtoFileContentSource (location));
+            builder.AddContentSource(() => new ProtoFileContentSource (location, builder.ContentLogger));
             return builder;
 
         }
@@ -34,7 +34,7 @@ namespace Content.Localization
             var o = new ProtoFileContentSourceOptions();
             options(o);
 
-            builder.AddContentSource(() => new ProtoFileContentSource (o.Location));
+            builder.AddContentSource(() => new ProtoFileContentSource (o.Location, builder.ContentLogger));
             return builder;
         }
     }

@@ -35,7 +35,6 @@ namespace Content.Localization
 
         }
 
-
         public static IContentBuilder AddUpdater(this IContentBuilder builder, Action<ContentUpdaterOptions> options)
         {
             if (builder is null)
@@ -63,10 +62,6 @@ namespace Content.Localization
 
             return builder;
         }
-
-
-
-
 
         public static IContentBuilder AddClassGenerator(this IContentBuilder builder, Action<ContentClassGeneratorOptions> options)
         {

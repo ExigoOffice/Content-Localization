@@ -117,7 +117,7 @@ namespace Content.Localization.Tests
                  Password           = _configuration["ApiPassword"],
                  SubscriptionKey    = _subscriptionKey,
                  EnvironmentCode    = _environmentCode
-            });
+            }, new NullContentLogger());
         }
 
 

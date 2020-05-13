@@ -1,0 +1,41 @@
+name: 1.0.$(Rev:.r)
+
+trigger:
+- master
+
+variables:
+  solution: 'Content-Localization.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+
+steps:
+
+- task: UseDotNet@2
+  inputs:
+    packageType: 'sdk'
+    version: '3.1.200'
+
+- task: RegexReplace@3
+  inputs:
+    InputSearchPattern: 'Directory.Build.props'
+    FindRegex: 'Version>[0-9\.]+'
+    ReplaceRegex: 'Version>$(Build.BuildNumber)'
+    UseUTF8: true
+
+- task: DotNetCoreCLI@2
+  displayName: Build
+  inputs:
+    projects: '$(solution)'
+    arguments: '--configuration $(BuildConfiguration) -p:Version=$(Build.BuildNumber)'
+
+
+- task: DotNetCoreCLI@2
+  displayName: 'Pack External Components'
+  inputs:
+    command: pack
+    packagesToPack: 'src/**/*.csproj'
+    packDirectory: '$(Build.ArtifactStagingDirectory)/Components'
+    versioningScheme: byBuildNumber
+
+
+

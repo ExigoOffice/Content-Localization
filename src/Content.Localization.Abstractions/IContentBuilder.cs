@@ -6,9 +6,8 @@ namespace Content.Localization
 {
     public interface IContentBuilder
     {
-        
-        //IContentBuilder AddContentSource<TContentSource>()  where TContentSource : IContentSource;
+        IContentLogger ContentLogger { get; set; }
         IContentBuilder AddContentSource<TContentSource>(Func<TContentSource> factory)  where TContentSource : IContentSource;
-
+        IContentBuilder AddLogger<TLogger>(Func<TLogger> factory) where TLogger : IContentLogger;
     }
 }

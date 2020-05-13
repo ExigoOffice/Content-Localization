@@ -1,6 +1,7 @@
 ﻿using ProtoBuf;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -13,13 +14,14 @@ namespace Content.Localization
     {
         private const string _errorGettingFile = "Error Getting File";
         private readonly string _location;
+        private readonly IContentLogger _logger;
 
         public IContentSource NextSource { get; set; }
 
-        public ProtoFileContentSource(string location)
+        public ProtoFileContentSource(string location, IContentLogger logger)
         {
             _location = location;
-            
+            _logger = logger;
         }
 
         public string GetCultureFileName(string cultureCode)
@@ -57,14 +59,22 @@ namespace Content.Localization
                             .ConfigureAwait(false);
                     }
 
+                    var sw = Stopwatch.StartNew();
+
                     using var file  = File.OpenRead(fileName);
 
-                    return Serializer.Deserialize<IEnumerable<ContentItem>>(file);
+                    var ret = Serializer.Deserialize<IEnumerable<ContentItem>>(file);
+
+                    _logger.LogVerbose("Load of file {File} took {Duration}", fileName, sw.Elapsed);
+
+                    return ret;
                 }
-                catch(IOException)
+                catch(IOException ex)
                 {
                     if (i == (tryCount - 1))
                         throw;                            
+
+                    _logger.LogVerbose("Error Writing File, RetryCount " + i + ". " + ex.Message );
 
                     await Task.Delay(100).ConfigureAwait(false);
                 }
@@ -117,10 +127,12 @@ namespace Content.Localization
                         return Serializer.Deserialize<ContentVersion>(file);
                     }
                 }
-                catch(IOException)
+                catch(IOException ex)
                 {
                     if (i == (tryCount - 1))
                         throw;                            
+
+                    _logger.LogVerbose("Error Reading Version, RetryCount " + i + ". " + ex.Message );
 
                     await Task.Delay(100).ConfigureAwait(false);
                 }
@@ -187,7 +199,7 @@ namespace Content.Localization
                 .FirstOrDefault(i=>i.Name == name);
         }
 
-        public Task<IEnumerable<string>> GetCultureCodesAsync(ContentVersion currentVersion=null)
+        public Task<IEnumerable<string>> GetCultureCodesAsync(ContentVersion currentVersion =null)
         {
             var di = new DirectoryInfo(_location);
             var files = di.GetFiles("*.dat");
