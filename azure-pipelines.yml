@@ -30,6 +30,12 @@ steps:
     projects: '$(solution)'
     arguments: '--configuration $(BuildConfiguration) -p:Version=$(Build.BuildNumber)'
 
+- task: DotNetCoreCLI@2
+  displayName: Test
+  inputs:
+    command: test
+    projects: 'test/**/*Tests.csproj'    
+    arguments: '--configuration $(BuildConfiguration) --no-build'
 
 - task: DotNetCoreCLI@2
   displayName: 'Pack External Components'
@@ -39,5 +45,12 @@ steps:
     packDirectory: '$(Build.ArtifactStagingDirectory)/Components'
     versioningScheme: byBuildNumber
 
+- task: NuGetCommand@2
+  displayName: 'NuGet Push External Components'
+  inputs:
+    command: push
+    packagesToPush: '$(Build.ArtifactStagingDirectory)/EnternalComponents/*.nupkg'
+    nuGetFeedType: external
+    publishFeedCredentials: 'Exigo MyGet Public'
 
 
