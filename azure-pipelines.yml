@@ -8,8 +8,10 @@ variables:
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
 
-steps:
+pool:
+  vmImage: 'windows-latest'
 
+steps:
 - task: UseDotNet@2
   inputs:
     packageType: 'sdk'
