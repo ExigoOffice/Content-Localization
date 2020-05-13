@@ -49,7 +49,7 @@ steps:
   displayName: 'NuGet Push External Components'
   inputs:
     command: push
-    packagesToPush: '$(Build.ArtifactStagingDirectory)/EnternalComponents/*.nupkg'
+    packagesToPush: '$(Build.ArtifactStagingDirectory)/Components/*.nupkg'
     nuGetFeedType: external
     publishFeedCredentials: 'Exigo MyGet Public'
 
