@@ -63,7 +63,7 @@ namespace Content.Localization
             return builder;
         }
 
-        public static IContentBuilder AddClassGenerator(this IContentBuilder builder, Action<ContentClassGeneratorOptions> options)
+        public static IContentBuilder AddClassGenerator(this IContentBuilder builder, Action<ClassGeneratorOptions> options)
         {
             if (options is null)
             {
@@ -72,10 +72,10 @@ namespace Content.Localization
 
             var ourBuilder = (LocalizerConfiguration)builder;
             
-            var o = new ContentClassGeneratorOptions();
+            var o = new ClassGeneratorOptions();
             options(o);
 
-            ourBuilder.ClassGenerator = new  ContentClassGenerator(o);
+            ourBuilder.ClassGenerator = new  StaticContentClassGenerator(o);
 
             return builder;
         }

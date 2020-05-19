@@ -7,17 +7,21 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Content.Localization.AspNetFramework.Tests
 {
-    public class ContentClassGeneratorTests : IDisposable
+    public class StaticContentClassGeneratorTests : IDisposable
     {
 
         private readonly string  _location;
-        public ContentClassGeneratorTests()
+        private readonly ITestOutputHelper _output;
+
+        public StaticContentClassGeneratorTests(ITestOutputHelper output)
         {
             _location = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             Directory.CreateDirectory(_location);
+            _output = output;
         }
 
         public void Dispose()
@@ -29,7 +33,7 @@ namespace Content.Localization.AspNetFramework.Tests
         public async Task GenerateAndSaveIfChangedAsync_Writes_File()
         {
             //Arrange
-            var generator = new ContentClassGenerator(new ContentClassGeneratorOptions
+            var generator = new StaticContentClassGenerator(new ClassGeneratorOptions
             {
                  ClassName = "OurTest",
                  Location  = _location
@@ -50,16 +54,50 @@ namespace Content.Localization.AspNetFramework.Tests
         }
 
         [Fact]
+        public async Task Carousel_GenerateAndSaves()
+        {
+            //Arrange
+            var generator = new StaticContentClassGenerator(new ClassGeneratorOptions
+            {
+                 ClassName = "OurTest",
+                 Location  = _location
+            });
+
+            var source = new MockContentSource();
+            source.SetData("en-US", 
+                new Dictionary<string, string> { 
+                    { "A", "ValA" },
+                    { "C", @"<exigocarousel><exigocarouselattributes type=""bootstrap3"" /><exigobanner name=""Banner_One"" /><exigobanner name=""Banner_Two"" /></exigocarousel>" },
+                    { "Banner_One", "Banner_One_Value" },
+                    { "Banner_Two", "Banner_Two_Value" },
+                });
+
+
+            //Act
+            await generator.GenerateAndSaveIfChangedAsync(new ContentVersion {  Version="1.0"}, source);
+
+            //Assert
+            var contents = File.ReadAllText(generator.GetFullFileName());
+            _output.WriteLine(contents);
+
+            Assert.Contains("string A =>", contents);
+            
+
+        }
+
+
+
+        [Fact]
         public async Task GenerateAndSaveIfChangedAsync_Pulls_Version_FromHeader()
         {
             //Arrange
-            var options = new ContentClassGeneratorOptions
+            var options = new ClassGeneratorOptions
             {
                  ClassName = "OurTest",
                  Location  = _location
             }; 
 
-            var generator = new ContentClassGenerator(options);
+            var generator = new StaticContentClassGenerator(options);
 
             var source = new MockContentSource();
             source.SetData("en-US", new Dictionary<string, string> { { "A", "ValA"} });
@@ -67,7 +105,7 @@ namespace Content.Localization.AspNetFramework.Tests
 
 
             //Act
-            var generator2 = new ContentClassGenerator(options);
+            var generator2 = new StaticContentClassGenerator(options);
             var version = await generator2.GetExistingVersionAsync();
 
             //Assert
@@ -81,13 +119,13 @@ namespace Content.Localization.AspNetFramework.Tests
         public async Task GeneratedFile_OnlyUpdates_For_New_Version()
         {
             //Arrange
-            var options = new ContentClassGeneratorOptions
+            var options = new ClassGeneratorOptions
             {
                  ClassName = "OurTest",
                  Location  = _location
             }; 
 
-            var generator = new ContentClassGenerator(options);
+            var generator = new StaticContentClassGenerator(options);
 
             var source = new MockContentSource();
             source.SetData("en-US", new Dictionary<string, string> { { "A", "ValA"} });

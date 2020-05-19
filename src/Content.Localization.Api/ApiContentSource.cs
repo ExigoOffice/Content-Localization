@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.InteropServices.ComTypes;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace Content.Localization
 {
@@ -105,8 +106,25 @@ namespace Content.Localization
 
             var res = await CreateApiClient().ResourceSetCheckInAsync(req).ConfigureAwait(false);
 
-            _logger.LogVerbose("Api Checkin in {Duration}", sw.Elapsed);
-
+            if (req.InstalledVersion != res.Version || req.InstalledReleaseDate != res.ReleaseDate)
+            {
+                _logger.LogInformation("Update started for {SubscriptionKey} - {Environment} Installed {InstalledVersion} {InstalledReleaseDate}, Server {ServerVersion} {ServerReleaseDate}",
+                    req.SubscriptionKey,
+                    req.EnvironmentCode,
+                    req.InstalledVersion,
+                    req.InstalledReleaseDate,
+                    res.Version,
+                    res.ReleaseDate);
+            }
+            else
+            { 
+                _logger.LogVerbose("Api Checkin Env {Environment} Installed {InstalledVersion} {InstalledReleaseDate}, Server {ServerVersion} {ServerReleaseDate}",
+                    req.EnvironmentCode,
+                    req.InstalledVersion,
+                    req.InstalledReleaseDate,
+                    res.Version,
+                    res.ReleaseDate);
+            }
             return new ContentVersion {  Version = res.Version, ReleaseDate = res.ReleaseDate };
         }
 

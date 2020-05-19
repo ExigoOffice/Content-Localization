@@ -18,9 +18,6 @@ namespace Content.Localization
         public DateTime? EnabledStartDate { get; set; }
         [DataMember(Order=5)]
         public DateTime? EnabledEndDate { get; set; }
-
-        //public DateTime ModifiedDate { get; set; }
-
         /// <summary>
         /// Implicitly converts the <see cref="ContentItem"/> to a <see cref="string"/>.
         /// </summary>

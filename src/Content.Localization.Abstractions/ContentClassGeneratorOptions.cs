@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Content.Localization
 {
-    public class ContentClassGeneratorOptions
+    public class ClassGeneratorOptions
     {
         public string Namespace { get; set; }   = "Resources";
         public string ClassName { get; set; }   = "Common";

@@ -119,7 +119,7 @@ namespace Content.Localization.AspNetFramework.Tests
             // give the updater a chance to do its magic
             await Task.Delay(100);
 
-            var generator  = new ContentClassGenerator(new ContentClassGeneratorOptions
+            var generator  = new StaticContentClassGenerator(new ClassGeneratorOptions
             {
                  ClassName = "OurClass",
                  Location  = _location

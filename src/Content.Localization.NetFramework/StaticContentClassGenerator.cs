@@ -2,16 +2,18 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Content.Localization
 {
-    public class ContentClassGenerator : IContentClassGenerator
+    public class StaticContentClassGenerator : IContentClassGenerator
     {
-        private readonly ContentClassGeneratorOptions _options;
+        private readonly ClassGeneratorOptions _options;
 
-        public ContentClassGenerator(ContentClassGeneratorOptions options )
+        public StaticContentClassGenerator(ClassGeneratorOptions options )
         {
             _options = options;
         }
@@ -41,12 +43,12 @@ namespace {_options.Namespace}
     {{
         public static IContentLocalizer Content {{ get; set; }}
 ");
-            foreach (var item in items)
+            foreach (var item in items.Where(o=>o.Name!="Content"))
             {
                 sb.AppendLine(
                     !item.Value.Contains("<exigocarousel>")
                         ? $"        public static string {item.Name} => Content[\"{item.Name}\"];"
-                        : "//Carousel coming here");
+                        : StubCarousel(item, items));
             }
 
             sb.Append($@"
@@ -59,6 +61,54 @@ namespace {_options.Namespace}
 }}");
             return sb.ToString();
         }
+
+        public static readonly Dictionary<string, string> DataSetIdentifiers = new Dictionary<string, string>
+        {
+            {"Ranks", "rankID"},
+            {"CustomerTypes", "customerType"}
+        };
+
+        private static string StubCarousel(ContentItem carousel, IEnumerable<ContentItem> resourceItems)
+        {
+            var uniqueParams = new List<string>();
+            foreach (Match bannerName in new Regex("(?<=<exigobanner name=\").*?(?=\" />)").Matches(
+                carousel.Value))
+            foreach (Match setName in new Regex("(?<=<dataset name=\").*?(?=\" />)").Matches(resourceItems
+                .FirstOrDefault(b => b.Name == bannerName.Value).Value))
+            {
+                var first = resourceItems.FirstOrDefault(d => d.Name == setName.Value);
+                if (first != null && DataSetIdentifiers.ContainsKey(first.Value.Split(':')[0]) &&
+                    !uniqueParams.Contains(DataSetIdentifiers[first.Value.Split(':')[0]]))
+                    uniqueParams.Add(DataSetIdentifiers[first.Value.Split(':')[0]]);
+            }
+
+            return
+                $@"        public static string {carousel.Name} ({(uniqueParams.Count > 0 ? "string" : "")} {string.Join(" = null,", uniqueParams).Replace(",", ",string ")} {(uniqueParams.Count > 0 ? "= null" : "")}) {{ 
+                return Content.GenerateCarousel(""{carousel.Name}"", {CreateDictionaryParams(uniqueParams)}); 
+        }} {Environment.NewLine}";
+        }
+
+        private static string CreateDictionaryParams(IReadOnlyCollection<string> filters)
+        {
+            var filterString = new StringBuilder(" new Dictionary<string,string>() {");
+
+            foreach (var filter in filters)
+                filterString.Append($"{{\"{KeyOfValue(filter)}\", {filter}}},");
+
+            return (filters.Count > 0
+                       ? filterString.ToString().Substring(0, filterString.Length - 1)
+                       : filterString.ToString()) + "}";
+        }
+
+        private static string KeyOfValue(string val)
+        {
+            foreach (var i in DataSetIdentifiers)
+                if (i.Value == val)
+                    return i.Key;
+
+            return null;
+        }
+
 
         public async Task<ContentVersion> GetExistingVersionAsync()
         {
