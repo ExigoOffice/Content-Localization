@@ -38,6 +38,7 @@ namespace Content.Localization
 namespace {_options.Namespace}
 {{
     using System;
+    using System.Collections.Generic;
     using Content.Localization;
     public static class {_options.ClassName}
     {{

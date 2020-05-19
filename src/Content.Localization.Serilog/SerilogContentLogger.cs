@@ -9,7 +9,12 @@ namespace Content.Localization.Serilog
 
         public SerilogContentLogger(ILogger logger)
         {
-            _logger = logger;
+            if (logger is null)
+            {
+                throw new ArgumentNullException(nameof(logger));
+            }
+
+            _logger = logger.ForContext("Context", "ContentLocalization");
         }
 
         public void LogError(Exception ex, string format, params object[] args)
