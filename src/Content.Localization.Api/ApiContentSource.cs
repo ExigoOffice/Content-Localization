@@ -5,10 +5,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
-using System.Runtime.InteropServices.ComTypes;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
 
 namespace Content.Localization
 {
@@ -26,7 +24,7 @@ namespace Content.Localization
         }
 
 
-        ExigoApiClient CreateApiClient()
+        private ExigoApiClient CreateApiClient()
         {
             return  new ExigoApiClient(
                         _httpClientFactory(), 
@@ -92,12 +90,11 @@ namespace Content.Localization
 
         public async Task<ContentVersion> CheckForChangesAsync(ContentVersion currentVersion = null, CancellationToken token=default)
         {
-            var sw = Stopwatch.StartNew();
             var req = new ResourceSetCheckInRequest
             {
                 ComponentVersion        = this.GetType().Assembly.GetName().Version?.ToString(),
                 EnvironmentCode         = _options.EnvironmentCode,
-                HostAssemblyName        = _options.HostAssemblyName ?? Assembly.GetCallingAssembly()?.GetName().Name ?? "unknown",
+                HostAssemblyName        = _options.HostAssemblyName ?? Assembly.GetCallingAssembly().GetName().Name ?? "unknown",
                 InstalledReleaseDate    = currentVersion?.ReleaseDate,
                 InstalledVersion        = currentVersion?.Version,
                 MachineName             = Environment.MachineName,
@@ -131,7 +128,7 @@ namespace Content.Localization
 
         public ContentItem GetContentItem(string key, string cultureCode)
         {
-            throw new NotImplementedException();
+            return GetAllContentItemsAsync(cultureCode, null).ConfigureAwait(false).GetAwaiter().GetResult().FirstOrDefault( i => i.Name == key);
         }
 
         public Task SaveAllContentItemsAsync(string cultureCode, IEnumerable<ContentItem> items)

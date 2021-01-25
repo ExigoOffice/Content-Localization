@@ -1,14 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net.Http;
-using System.Text;
 
 namespace Content.Localization
 {
     public static class ApiContentBuilderExtensions
     {
         
-        static readonly HttpClient _cachedClient = new HttpClient {  Timeout = TimeSpan.FromMinutes(10) };
+        static readonly HttpClient _cachedClient = new() {  Timeout = TimeSpan.FromMinutes(10) };
             
         public static IContentBuilder AddApiSource(this IContentBuilder builder,  Action<ApiContentSourceOptions> options)
         {

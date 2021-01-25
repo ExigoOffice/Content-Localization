@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Content.Localization
 {
@@ -13,7 +11,7 @@ namespace Content.Localization
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            builder.AddContentSource<MemoryContentSource>(() => new MemoryContentSource());
+            builder.AddContentSource(() => new MemoryContentSource());
             return builder;
         }
 
