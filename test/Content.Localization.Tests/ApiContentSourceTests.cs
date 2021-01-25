@@ -12,7 +12,7 @@ namespace Content.Localization.Tests
 {
     public sealed class ApiContentSourceTests : IDisposable
     {
-        static readonly Uri _apiUri      = new Uri("https://exigodemov6-api.exigo.com/3.0/");
+        static readonly Uri _apiUri      = new Uri("http://exigodemov6-api.exigo.com/3.0/");
         const string _subscriptionKey    = "ContentTests";
         const string _environmentCode    = "dev";
 

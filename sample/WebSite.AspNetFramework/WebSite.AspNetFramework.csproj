@@ -115,13 +115,13 @@
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="App_Data\CDEN.cs" />
+    <Compile Include="App_Data\ourd.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
-    <Compile Include="Localization\OurTest.cs" />
-    <Compile Include="Localization\psttest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -148,7 +148,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="App_Data\Json\" />
+    <Folder Include="Localization\" />
     <Folder Include="Models\" />
   </ItemGroup>
   <ItemGroup>
