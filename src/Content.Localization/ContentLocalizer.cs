@@ -11,9 +11,9 @@ namespace Content.Localization
 
         public ContentLocalizer(IContentSource source, string defaultCultureCode)
         {
-            var renderedSource = new RenderedContentSource(() => new MemoryContentSource(), defaultCultureCode);
+            var renderedSource = new RenderedContentSource( defaultCultureCode);
 
-            if (source.NextSource != null)
+            if (source?.NextSource != null)
             {
                 renderedSource.NextSource = source.NextSource;
                 source.NextSource = renderedSource;
