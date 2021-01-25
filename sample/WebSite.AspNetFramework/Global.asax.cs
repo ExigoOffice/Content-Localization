@@ -17,12 +17,10 @@ namespace WebSite.AspNetFramework
             
             Resources.CDEN.Content = new LocalizerConfiguration()
                 .AddMemorySource()
-                .AddMemorySource()
                 .AddProtoFileSource(o=> 
                 { 
                     o.Location          = Server.MapPath("~/App_Data");
                 })
-                .AddMemorySource()
                 .AddApiSource(o=> 
                 {
                     o.ApiUri            = new Uri("http://exigodemov6-api.exigo.com/3.0/");

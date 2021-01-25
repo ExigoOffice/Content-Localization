@@ -27,7 +27,6 @@ namespace Content.Localization
         public RenderedContentSource(Func<IContentSource> alternateContentSourceFactory, string defaultCultureCode)
         {
             _alternateContentSourceFactory = alternateContentSourceFactory;
-            _alternateContentSourceFactory = alternateContentSourceFactory;
             _defaultCultureCode = defaultCultureCode;
         }
 
