@@ -17,7 +17,6 @@ namespace WebSite.AspNetFramework
             
             Resources.CDEN.Content = new LocalizerConfiguration()
                 .AddMemorySource()
-                .AddMemorySource()
                 .AddProtoFileSource(o=> 
                 { 
                     o.Location          = Server.MapPath("~/App_Data");

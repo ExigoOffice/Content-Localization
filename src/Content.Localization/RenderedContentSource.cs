@@ -78,7 +78,6 @@ namespace Content.Localization
                 seen ??= new HashSet<string>();
                 seen.Add(contentItem.Name);
 
-
                 foreach (Match match in matches)
                 {
                     var resourceName = match.Groups[1].Value;
