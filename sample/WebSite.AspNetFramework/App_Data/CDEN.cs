@@ -10,14 +10,14 @@ namespace Resources
     public static class CDEN
     {
         public static IContentLocalizer Content { get; set; }
-        public static string Happy1 => Content["Happy1"];
-        public static string Happy2 => Content["Happy2"];
-        public static string Happy3 => Content["Happy3"];
-        public static string MainPageThing => Content["MainPageThing"];
-        public static string ModifiedRef1 => Content["ModifiedRef1"];
-        public static string ModifiedRef2 => Content["ModifiedRef2"];
-        public static string TestingMerges => Content["TestingMerges"];
         public static string TheMainBackGround => Content["TheMainBackGround"];
+        public static string ModifiedRef2 => Content["ModifiedRef2"];
+        public static string Happy1 => Content["Happy1"];
+        public static string Happy3 => Content["Happy3"];
+        public static string ModifiedRef1 => Content["ModifiedRef1"];
+        public static string Happy2 => Content["Happy2"];
+        public static string TestingMerges => Content["TestingMerges"];
+        public static string MainPageThing => Content["MainPageThing"];
 
         [Obsolete("Use Content[name] instead")]
         public static string GetObject(string name)

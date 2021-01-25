@@ -21,10 +21,10 @@ namespace WebSite.AspNetFramework
                 .AddApiSource(o =>
                 {
                     o.ApiUri            = new Uri("http://exigodemov6-api.exigo.com/3.0/");
-                    o.LoginName         = "Administrator";
-                    o.Password          = "whodaman";
+                    o.LoginName         = "pstest";
+                    o.Password          = "*****";
                     o.Company           = "exigodemov6";
-                    o.SubscriptionKey   = "CDEN";
+                    o.SubscriptionKey   = "pstest";
                     o.EnvironmentCode   = "dev";
                 })
                 .AddUpdater(o=> 
@@ -33,7 +33,7 @@ namespace WebSite.AspNetFramework
                 })
                 .AddClassGenerator(o=>
                 {
-                    o.ClassName         = "CDEN";
+                    o.ClassName         = "pstest";
                     o.Location          = Server.MapPath("~/App_Data");
                 })
                 .AddSerilog()
