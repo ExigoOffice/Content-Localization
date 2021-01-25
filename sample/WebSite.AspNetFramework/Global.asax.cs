@@ -1,7 +1,4 @@
 using Content.Localization;
-
-
-using Serilog;
 using System;
 using System.Web.Mvc;
 using System.Web.Routing;
@@ -17,11 +14,11 @@ namespace WebSite.AspNetFramework
             
             Resources.CDEN.Content = new LocalizerConfiguration()
                 .AddMemorySource()
-                .AddProtoFileSource(o=> 
-                { 
-                    o.Location          = Server.MapPath("~/App_Data");
+                .AddProtoFileSource(o =>
+                {
+                    o.Location = Server.MapPath("~/App_Data");
                 })
-                .AddApiSource(o=> 
+                .AddApiSource(o =>
                 {
                     o.ApiUri            = new Uri("http://exigodemov6-api.exigo.com/3.0/");
                     o.LoginName         = "Administrator";
