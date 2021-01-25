@@ -11,12 +11,10 @@ namespace WebSite.AspNetFramework.Controllers
 {
     public class HomeController : Controller
     {
-       
         public ActionResult Index()
-        {
-            
-           CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
-           Console.WriteLine(CultureInfo.CurrentUICulture.Name + "e");
+        {  
+            Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo("ru");
+            Console.WriteLine(Thread.CurrentThread.CurrentUICulture + "e");
 
             return View();
         }

@@ -67,26 +67,16 @@ namespace Content.Localization
                 if (matches.Count <= 0)
                     return content;
 
-                // Create copy so we don't modify existing stuff
-                var contentItem = new ContentItem
-                {
-                    Enabled = content.Enabled,
-                    Name = content.Name,
-                    Value = content.Value,
-                    EnabledEndDate = content.EnabledEndDate,
-                    EnabledStartDate = content.EnabledStartDate
-                };
-
-                builder ??= new StringBuilder(contentItem.Value);
+                builder ??= new StringBuilder(content.Value);
                 seen ??= new HashSet<string>();
 
-                seen.Add(contentItem.Name);
+                seen.Add(content.Name);
 
                 foreach (Match match in matches)
                 {
                     var resourceName = match.Groups[1].Value;
 
-                    if (contentItem.Name == resourceName)
+                    if (content.Name == resourceName)
                     {
                         builder.Replace(match.Value, $"{SelfReferenceMessage} [{resourceName}]");
                         continue;
@@ -106,12 +96,12 @@ namespace Content.Localization
                     LoadNestedResources(nestedItem, culture, source, seen, builder, stackDepth + 1);
                 }
 
-                seen.Remove(contentItem.Name);
+                seen.Remove(content.Name);
 
                 if (stackDepth == 1)
                 {
-                    contentItem.Value = builder.ToString();
-                    return contentItem;
+                    content.Value = builder.ToString();
+                    return content;
                 }
             }
 
