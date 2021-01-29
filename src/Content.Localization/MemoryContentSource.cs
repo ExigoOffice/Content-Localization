@@ -13,8 +13,6 @@ namespace Content.Localization
 
     public class MemoryContentSource : IContentSource
     {
-
-
         //Using lazy will ensure the initialization is thread safe
         readonly ConcurrentDictionary<string, AtomicLazy<ConcurrentDictionary<string, ContentItem>>> _cache;
 
@@ -41,7 +39,7 @@ namespace Content.Localization
 
             GetCacheForCulture(cultureCode).TryGetValue(name, out var value);
 
-            return value;
+           return value;
         }
 
         private ConcurrentDictionary<string, ContentItem> GetCacheForCulture(string cultureCode)
@@ -50,13 +48,13 @@ namespace Content.Localization
                 () =>
                 {
                     //Version may be null as we don't know the version yet
-
                     var items   = NextSource.GetAllContentItemsAsync(cultureCode: cultureCode, requestedVersion: _version)
                                         .ConfigureAwait(false)
                                         .GetAwaiter()
-                                        .GetResult(); 
+                                        .GetResult();
 
                     var dict = new ConcurrentDictionary<string, ContentItem>();
+
                     foreach (var item in items)
                     {
                         dict.TryAdd(item.Name, item);
@@ -75,7 +73,7 @@ namespace Content.Localization
         public async Task<ContentVersion> CheckForChangesAsync(ContentVersion knownVersion = null, CancellationToken token = default)
         {
             var myVersion   = _version;
-            var nextVersion = await NextSource.CheckForChangesAsync(myVersion).ConfigureAwait(false);
+            var nextVersion = await NextSource.CheckForChangesAsync(myVersion,token).ConfigureAwait(false);
 
             if (myVersion?.Version != nextVersion.Version || myVersion?.ReleaseDate != nextVersion.ReleaseDate)
             {
@@ -120,10 +118,9 @@ namespace Content.Localization
             return Task.FromResult(_cache.Keys.AsEnumerable());
         }
 
-
         //We use this instead of lazy because lazy caches exceptions
         //this will allow retry's
-        class AtomicLazy<T>
+        internal class AtomicLazy<T>
         {
             private readonly Func<T> _factory;
             private T _value;

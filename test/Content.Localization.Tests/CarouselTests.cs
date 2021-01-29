@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -34,7 +35,22 @@ namespace Content.Localization.Tests
                 .Returns(new ContentItem { Name = "Carousel",  Enabled = true, Value = 
                     @"Banner_Two_Content"});
 
-
+            source.Setup(contentSource => contentSource.GetAllContentItemsAsync("en-US", It.IsAny<ContentVersion>()))
+                .Returns(() => Task.FromResult<IEnumerable<ContentItem>>(new[]
+                {
+                    new ContentItem
+                    {
+                        Name = "Carousel", Enabled = true, Value = @"<exigocarousel><exigocarouselattributes type=""bootstrap3"" /><exigobanner name=""Banner_One"" /><exigobanner name=""Banner_Two"" /></exigocarousel>"
+                    },
+                    new ContentItem
+                    {
+                        Name = "Banner_One", Enabled = true, Value = @"Banner_One_Content"
+                    },
+                    new ContentItem
+                    {
+                        Name = "Banner_Two", Enabled = true, Value = @"Banner_Two_Content"
+                    }
+                }));
 
             var localizer = new ContentLocalizer(source.Object, "en-US");
 
