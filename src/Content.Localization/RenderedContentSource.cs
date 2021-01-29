@@ -90,7 +90,7 @@ namespace Content.Localization
                         continue;
                     }
                     var nestedItem = LayeredLanguageItemLookup(resourceName, culture);
-                    if (nestedItem?.Enabled ?? true)
+                    if (nestedItem?.Enabled == true && Between(DateTime.UtcNow, nestedItem.EnabledStartDate, nestedItem.EnabledEndDate))
                     {
                         // Replace Resource Token With Actual Value
                         builder.Replace(match.Value, nestedItem?.Value ?? string.Empty);
