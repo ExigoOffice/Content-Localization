@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+
 using Xunit;
 
 namespace Content.Localization.Tests
@@ -20,10 +21,10 @@ namespace Content.Localization.Tests
             {
 
 
-                var list =new List<object[]>
+                var list = new List<object[]>
                 {
                     //--> Memory over mock
-                    new object[] {"MemoryOverMock", new Func<IContentSource>(() => 
+                    new object[] {"MemoryOverMock", new Func<IContentSource>(() =>
                         new MemoryContentSource {
                             NextSource =  DefaultMock()
                         }
@@ -31,17 +32,17 @@ namespace Content.Localization.Tests
 
                     //--> Proto over mock
                     new object[] {"ProtoOverMock", new Func<IContentSource>(() =>
-                        new ProtoFileContentSource(_location, new NullContentLogger()) { 
+                        new ProtoFileContentSource(_location, new NullContentLogger()) {
                             NextSource = DefaultMock()
                         }
-                           
+
                     )},
 
 
                     //--> Json over mock
                     new object[] {"JsonOverMock", new Func<IContentSource>(() =>
                         new JsonFileContentSource(_location) {
-                            NextSource = DefaultMock() 
+                            NextSource = DefaultMock()
                         }
                     )},
 
@@ -78,37 +79,88 @@ namespace Content.Localization.Tests
                 return list;
             }
         }
-
-
         [Theory]
         [MemberData(nameof(ContentSources))]
         public void Disabled_ShouldWriteBlankForResource(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
             mock.SetData("en-US", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValue", 
+                ["SomeKey"] = "SomeValue",
                 ["ReferenceSomeKey"] = "{{SomeKey}}"
             });
-            var item = mock.GetAllContentItemsAsync("en-US")
-                .ContinueWith(task => task.Result.First(i => i.Name == "SomeKey"))
-                .ConfigureAwait(false).GetAwaiter().GetResult();
-            item.Enabled = false;
+            UpdateItem(GetItem(mock, "SomeKey"), false);
             //Act/Assert
-            Assert.Equal("", localizer["SomeKey"] );
-            Assert.Equal(localizer["SomeKey"], localizer["ReferenceSomeKey"] );
+            Assert.Equal("", localizer["SomeKey"]);
+            Assert.Equal(localizer["SomeKey"], localizer["ReferenceSomeKey"]);
         }
-        
+        [Theory]
+        [MemberData(nameof(ContentSources))]
+        public void EnabledForTimeFrame_ShouldWriteResource(string name, Func<IContentSource> factory)
+        {
+            //Arrange
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
+            mock.SetData("en-US", new Dictionary<string, string>
+            {
+                ["InBetween"] = "SomeValue",
+                ["EndDateNotReached"] = "SomeValue2",
+                ["StartDatePassed"] = "{{InBetween}}"
+            });
+            UpdateItem(GetItem(mock, "InBetween"), true, DateTime.Now.AddDays(-1), DateTime.Now.AddDays(1));
+            // We don't consider the following cases possible yet
+            // UpdateItem(GetItem(mock, "EndDateNotReached"), true, DateTime.Now.AddDays(1));
+            // UpdateItem(GetItem(mock, "StartDatePassed"), true, DateTime.Now.AddDays(-1));
+            //Act/Assert
+            Assert.Equal("SomeValue", localizer["InBetween"]);
+            Assert.Equal("SomeValue2", localizer["EndDateNotReached"]);
+            Assert.Equal(localizer["InBetween"], localizer["StartDatePassed"]);
+        }
+        [Theory]
+        [MemberData(nameof(ContentSources))]
+        public void DisabledForTimeFrame_ShouldWriteResource(string name, Func<IContentSource> factory)
+        {
+            //Arrange
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
+            mock.SetData("en-US", new Dictionary<string, string>
+            {
+                ["EndDatePassed"] = "SomeValue2",
+                ["StartDateNotReached"] = "{{EndDatePassed}}"
+            });
+            UpdateItem(GetItem(mock, "EndDatePassed"), true, DateTime.Now.AddDays(-2), DateTime.Now.AddDays(-1));
+            UpdateItem(GetItem(mock, "StartDateNotReached"), true, DateTime.Now.AddDays(1), DateTime.Now.AddDays(2));
+            //Act/Assert
+            Assert.Equal("", localizer["EndDatePassed"]);
+            Assert.Equal(localizer["EndDatePassed"], localizer["StartDateNotReached"]);
+        }
+        private static void UpdateItem(ContentItem item, bool enabled, DateTime? enabledStartDate = null, DateTime? enabledEndDate = null)
+        {
+            item.Enabled = enabled;
+            item.EnabledStartDate = enabledStartDate;
+            item.EnabledEndDate = enabledEndDate;
+        }
+        private static ContentItem GetItem(MockContentSource mock, string name)
+        {
+            return mock.GetAllContentItemsAsync("en-US")
+                .ContinueWith(task => task.Result.First(i => i.Name == name))
+                .ConfigureAwait(false).GetAwaiter().GetResult();
+        }
+
+
+
         [Theory]
         [MemberData(nameof(ContentSources))]
         public async Task CheckForChangesAsync_CalledTwice_Calls_Data_Once(string name, Func<IContentSource> factory)
         {
             //Arrange
             var source = factory();
-            var mock   = GetMock(source);
+            var mock = GetMock(source);
 
             //Act
             _ = await source.CheckForChangesAsync();
@@ -125,7 +177,7 @@ namespace Content.Localization.Tests
         {
             //Arrange
             var source = factory();
-            var mock   = GetMock(source);
+            var mock = GetMock(source);
 
             //Act
             _ = source.GetContentItem("A", "en-US");
@@ -133,7 +185,7 @@ namespace Content.Localization.Tests
 
             //Assert
             Assert.Equal("ValA", item);
-            Assert.Equal(1, mock.GetAllContentItemsInvokeCount); 
+            Assert.Equal(1, mock.GetAllContentItemsInvokeCount);
         }
 
 
@@ -143,37 +195,37 @@ namespace Content.Localization.Tests
         {
             //Arrange
             var source = factory();
-            var mock   = GetMock(source);
+            var mock = GetMock(source);
 
             //Act/Assert
             for (int i = 0; i < 10; i++)
-            { 
+            {
                 Assert.Equal("ValA", source.GetContentItem("A", "en-US"));
-                Assert.Equal(1, mock.GetAllContentItemsInvokeCount); 
+                Assert.Equal(1, mock.GetAllContentItemsInvokeCount);
             }
 
             //--> Version Change
             mock.SetVersion("2.0", new DateTime(2020, 1, 1));
-            mock.SetData("en-US", new Dictionary<string, string> { { "A", "ValB"} });
+            mock.SetData("en-US", new Dictionary<string, string> { { "A", "ValB" } });
 
             await source.CheckForChangesAsync();
 
             for (int i = 0; i < 10; i++)
-            { 
-                Assert.Equal("ValB", source.GetContentItem("A", "en-US"));            
-                Assert.Equal(2, mock.GetAllContentItemsInvokeCount); 
+            {
+                Assert.Equal("ValB", source.GetContentItem("A", "en-US"));
+                Assert.Equal(2, mock.GetAllContentItemsInvokeCount);
             }
 
             //--> Modified date change
             mock.SetVersion("2.0", new DateTime(2020, 1, 2));
-            mock.SetData("en-US", new Dictionary<string, string> { { "A", "ValC"} });
+            mock.SetData("en-US", new Dictionary<string, string> { { "A", "ValC" } });
 
             await source.CheckForChangesAsync();
 
             for (int i = 0; i < 10; i++)
-            { 
-                Assert.Equal("ValC", source.GetContentItem("A", "en-US"));            
-                Assert.Equal(3, mock.GetAllContentItemsInvokeCount); 
+            {
+                Assert.Equal("ValC", source.GetContentItem("A", "en-US"));
+                Assert.Equal(3, mock.GetAllContentItemsInvokeCount);
             }
         }
 
@@ -183,14 +235,14 @@ namespace Content.Localization.Tests
         {
             //Arrange
             var source = factory();
-            var mock   = GetMock(source);
-            
+            var mock = GetMock(source);
+
             //Act/Assert
-            
-            
+
+
             //This will blow up if there are file locking issues when those sources aren't protected
             //behind the memory one. This demonstrates that multiple processes will not kill each other
-            Parallel.For(0, 20, t=>
+            Parallel.For(0, 20, t =>
             {
                 for (int i = 0; i < 10; i++)
                 {
@@ -199,30 +251,30 @@ namespace Content.Localization.Tests
                 }
             });
 
-            
+
             //Data gets updated
             mock.SetVersion("2.0", new DateTime(2020, 1, 1));
-            mock.SetData("en-US", new Dictionary<string, string> { { "A", "ValB"} });
+            mock.SetData("en-US", new Dictionary<string, string> { { "A", "ValB" } });
 
 
             //Unlikely concurrent updates (simulates multiple worker processes etc)
-            Parallel.For(0,20, t=>
-            {
-                var newVersion = source.CheckForChangesAsync()
-                    .GetAwaiter()
-                    .GetResult();
+            Parallel.For(0, 20, t =>
+             {
+                 var newVersion = source.CheckForChangesAsync()
+                     .GetAwaiter()
+                     .GetResult();
 
-                Assert.Equal("2.0", newVersion.Version);
-            });
+                 Assert.Equal("2.0", newVersion.Version);
+             });
 
-            Parallel.For(0,20, t=>
-            {
-                for (int i = 0; i < 10; i++)
-                {
-                    var item = source.GetContentItem("A", "en-US");
-                    Assert.Equal("ValB", item);
-                }
-            });
+            Parallel.For(0, 20, t =>
+             {
+                 for (int i = 0; i < 10; i++)
+                 {
+                     var item = source.GetContentItem("A", "en-US");
+                     Assert.Equal("ValB", item);
+                 }
+             });
         }
 
 
@@ -231,9 +283,9 @@ namespace Content.Localization.Tests
         public void Localizer_Returns_Localized_Content(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
             mock.SetData("en-US", new Dictionary<string, string> { { "SomeKey", "Val-en-US" } });
             mock.SetData("es-MX", new Dictionary<string, string> { { "SomeKey", "Val-es-MX" } });
@@ -242,14 +294,14 @@ namespace Content.Localization.Tests
             Assert.True(string.IsNullOrEmpty(localizer["Some unknown key"]));
 
             CultureInfo.CurrentUICulture = new CultureInfo("en-US");
-            Assert.Equal("Val-en-US", localizer["SomeKey"] );
+            Assert.Equal("Val-en-US", localizer["SomeKey"]);
 
             CultureInfo.CurrentUICulture = new CultureInfo("es-MX");
-            Assert.Equal("Val-es-MX", localizer["SomeKey"] );
+            Assert.Equal("Val-es-MX", localizer["SomeKey"]);
 
 
             CultureInfo.CurrentUICulture = new CultureInfo("es-FR"); //we don't have this so it should resort to default
-            Assert.Equal("Val-en-US", localizer["SomeKey"] );
+            Assert.Equal("Val-en-US", localizer["SomeKey"]);
         }
 
         [Theory]
@@ -257,17 +309,17 @@ namespace Content.Localization.Tests
         public void Locizer_Falls_Back_To_Two_Letter_Culture(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
-            mock.SetData("en-US", new Dictionary<string, string> { { "SomeKey", "Val-en"} });
-            
-            mock.SetData("es", new Dictionary<string, string> { { "SomeKey", "Val-es"} });
+            mock.SetData("en-US", new Dictionary<string, string> { { "SomeKey", "Val-en" } });
+
+            mock.SetData("es", new Dictionary<string, string> { { "SomeKey", "Val-es" } });
 
             //Act/Assert
             CultureInfo.CurrentUICulture = new CultureInfo("es-MX");
-            Assert.Equal("Val-es", localizer["SomeKey"] );
+            Assert.Equal("Val-es", localizer["SomeKey"]);
         }
 
         [Theory]
@@ -275,19 +327,19 @@ namespace Content.Localization.Tests
         public void NestedResource_ShouldEvaluateNestedResource(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
             mock.SetData("en-US", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValue", 
+                ["SomeKey"] = "SomeValue",
                 ["ReferenceSomeKey"] = "{{SomeKey}}"
             });
 
             //Act/Assert
-            Assert.Equal("SomeValue", localizer["SomeKey"] );
-            Assert.Equal(localizer["SomeKey"], localizer["ReferenceSomeKey"] );
+            Assert.Equal("SomeValue", localizer["SomeKey"]);
+            Assert.Equal(localizer["SomeKey"], localizer["ReferenceSomeKey"]);
         }
 
         [Theory]
@@ -295,65 +347,65 @@ namespace Content.Localization.Tests
         public void MultipleNestedResources_ShouldEvaluateNestedResources(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
             mock.SetData("en-US", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValue", 
+                ["SomeKey"] = "SomeValue",
                 ["ReferenceSomeKey"] = "{{SomeKey}}-{{SomeKey}}"
             });
 
             //Act/Assert
-            Assert.Equal("SomeValue", localizer["SomeKey"] );
-            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"] );
+            Assert.Equal("SomeValue", localizer["SomeKey"]);
+            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"]);
         }
-        
+
         [Theory]
         [MemberData(nameof(ContentSources))]
         public void MultipleLayersOfNestedResources_ShouldEvaluateNestedResources(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
             mock.SetData("en-US", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValue", 
+                ["SomeKey"] = "SomeValue",
                 ["ReferenceSomeKey"] = "{{SomeKey}}-{{SomeKey}}",
                 ["Reference_ReferenceSomeKey"] = "{{ReferenceSomeKey}}-{{ReferenceSomeKey}}",
             });
 
             //Act/Assert
-            Assert.Equal("SomeValue", localizer["SomeKey"] );
-            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"] );
-            Assert.Equal($"{localizer["ReferenceSomeKey"]}-{localizer["ReferenceSomeKey"]}", localizer["Reference_ReferenceSomeKey"] );
+            Assert.Equal("SomeValue", localizer["SomeKey"]);
+            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"]);
+            Assert.Equal($"{localizer["ReferenceSomeKey"]}-{localizer["ReferenceSomeKey"]}", localizer["Reference_ReferenceSomeKey"]);
         }
-        
+
         [Theory]
         [MemberData(nameof(ContentSources))]
         public void MultipleLayersOfNestedResources2_ShouldEvaluateNestedResources(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
             mock.SetData("en-US", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValue", 
+                ["SomeKey"] = "SomeValue",
                 ["ReferenceSomeKey"] = "{{SomeKey}}-{{SomeKey}}",
                 ["Reference_ReferenceSomeKey"] = "{{SomeKey}}-{{ReferenceSomeKey}}",
                 ["Reference_Reference_ReferenceSomeKey"] = "{{ReferenceSomeKey}}-{{Reference_ReferenceSomeKey}}",
             });
 
             //Act/Assert
-            Assert.Equal("SomeValue", localizer["SomeKey"] );
-            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"] );
-            Assert.Equal($"{localizer["SomeKey"]}-{localizer["ReferenceSomeKey"]}", localizer["Reference_ReferenceSomeKey"] );
-            Assert.Equal($"{localizer["ReferenceSomeKey"]}-{localizer["Reference_ReferenceSomeKey"]}", localizer["Reference_Reference_ReferenceSomeKey"] );
+            Assert.Equal("SomeValue", localizer["SomeKey"]);
+            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"]);
+            Assert.Equal($"{localizer["SomeKey"]}-{localizer["ReferenceSomeKey"]}", localizer["Reference_ReferenceSomeKey"]);
+            Assert.Equal($"{localizer["ReferenceSomeKey"]}-{localizer["Reference_ReferenceSomeKey"]}", localizer["Reference_Reference_ReferenceSomeKey"]);
         }
 
         [Theory]
@@ -361,243 +413,243 @@ namespace Content.Localization.Tests
         public void ResourceNotFoundForSpecifiedCulture_ExistsInDefaultCulture_ShouldGetValueFromDefaultCulture(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
             mock.SetData("en-US", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValue", 
+                ["SomeKey"] = "SomeValue",
                 ["ReferenceSomeKey"] = "{{SomeKey}}"
             });
 
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("af");
-            
+
             //Act/Assert
-            Assert.Equal("SomeValue", localizer["SomeKey"] );
-            Assert.Equal(localizer["SomeKey"], localizer["ReferenceSomeKey"] );
+            Assert.Equal("SomeValue", localizer["SomeKey"]);
+            Assert.Equal(localizer["SomeKey"], localizer["ReferenceSomeKey"]);
         }
-        
+
         [Theory]
         [MemberData(nameof(ContentSources))]
         public void ResourceNotFoundForSpecifiedCulture_ExistsInDefaultCulture_MultipleNestedResources_ShouldGetValuesFromDefaultCulture(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
             mock.SetData("en-US", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValue", 
+                ["SomeKey"] = "SomeValue",
                 ["ReferenceSomeKey"] = "{{SomeKey}}-{{SomeKey}}"
             });
 
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("af");
 
             //Act/Assert
-            Assert.Equal("SomeValue", localizer["SomeKey"] );
-            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"] );
+            Assert.Equal("SomeValue", localizer["SomeKey"]);
+            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"]);
         }
-        
+
         [Theory]
         [MemberData(nameof(ContentSources))]
         public void ResourceNotFoundForSpecifiedCulture_ExistsInDefaultCulture_MultipleLayersOfNestedResources_ShouldGetValuesFromDefaultCulture(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
             mock.SetData("en-US", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValue", 
+                ["SomeKey"] = "SomeValue",
                 ["ReferenceSomeKey"] = "{{SomeKey}}-{{SomeKey}}",
                 ["Reference_ReferenceSomeKey"] = "{{ReferenceSomeKey}}-{{ReferenceSomeKey}}",
             });
-            
+
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("af");
 
             //Act/Assert
-            Assert.Equal("SomeValue", localizer["SomeKey"] );
-            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"] );
-            Assert.Equal($"{localizer["ReferenceSomeKey"]}-{localizer["ReferenceSomeKey"]}", localizer["Reference_ReferenceSomeKey"] );
+            Assert.Equal("SomeValue", localizer["SomeKey"]);
+            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"]);
+            Assert.Equal($"{localizer["ReferenceSomeKey"]}-{localizer["ReferenceSomeKey"]}", localizer["Reference_ReferenceSomeKey"]);
         }
-        
+
         [Theory]
         [MemberData(nameof(ContentSources))]
         public void SomeResourceFoundForSpecifiedCulture_ShouldGetValueFromSpecifiedCultureIfExistsOtherwiseDefaultCulture(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
             mock.SetData("en-US", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValue", 
+                ["SomeKey"] = "SomeValue",
                 ["ReferenceSomeKey"] = "{{SomeKey}}"
             });
-            
+
             mock.SetData("af", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValueAf", 
+                ["SomeKey"] = "SomeValueAf",
             });
 
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("af");
-            
+
             //Act/Assert
-            Assert.Equal("SomeValueAf", localizer["SomeKey"] );
-            Assert.Equal(localizer["SomeKey"], localizer["ReferenceSomeKey"] );
+            Assert.Equal("SomeValueAf", localizer["SomeKey"]);
+            Assert.Equal(localizer["SomeKey"], localizer["ReferenceSomeKey"]);
         }
-        
+
         [Theory]
         [MemberData(nameof(ContentSources))]
         public void SomeResourceFoundForSpecifiedCulture_MultipleResources_ShouldGetValueFromSpecifiedCultureIfExistsOtherwiseDefaultCulture(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
             mock.SetData("en-US", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValue", 
+                ["SomeKey"] = "SomeValue",
                 ["ReferenceSomeKey"] = "{{SomeKey}}-{{SomeKey}}"
             });
-            
+
             mock.SetData("af", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValueAf", 
+                ["SomeKey"] = "SomeValueAf",
             });
 
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("af");
 
             //Act/Assert
-            Assert.Equal("SomeValueAf", localizer["SomeKey"] );
-            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"] );
+            Assert.Equal("SomeValueAf", localizer["SomeKey"]);
+            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"]);
         }
-        
+
         [Theory]
         [MemberData(nameof(ContentSources))]
         public void SomeResourceFoundForSpecifiedCulture_MultipleLayersOfResources_ShouldGetValueFromSpecifiedCultureIfExistsOtherwiseDefaultCulture(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
             mock.SetData("en-US", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValue", 
+                ["SomeKey"] = "SomeValue",
                 ["ReferenceSomeKey"] = "{{SomeKey}}-{{SomeKey}}",
                 ["Reference_ReferenceSomeKey"] = "{{ReferenceSomeKey}}-{{ReferenceSomeKey}}",
             });
-            
+
             mock.SetData("af", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValueAf", 
+                ["SomeKey"] = "SomeValueAf",
             });
-            
+
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("af");
 
             //Act/Assert
-            Assert.Equal("SomeValueAf", localizer["SomeKey"] );
-            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"] );
-            Assert.Equal($"{localizer["ReferenceSomeKey"]}-{localizer["ReferenceSomeKey"]}", localizer["Reference_ReferenceSomeKey"] );
+            Assert.Equal("SomeValueAf", localizer["SomeKey"]);
+            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"]);
+            Assert.Equal($"{localizer["ReferenceSomeKey"]}-{localizer["ReferenceSomeKey"]}", localizer["Reference_ReferenceSomeKey"]);
         }
-        
+
         [Theory]
         [MemberData(nameof(ContentSources))]
         public void SomeResourceFoundForNeutralVariantOfSpecifiedCulture_ShouldGetValueFromNeutralVariantOfSpecifiedCultureIfExistsOtherwiseDefaultCulture(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
             mock.SetData("en-US", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValue", 
+                ["SomeKey"] = "SomeValue",
                 ["ReferenceSomeKey"] = "{{SomeKey}}"
             });
-            
+
             mock.SetData("es", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValueAf", 
+                ["SomeKey"] = "SomeValueAf",
             });
 
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("es-US");
-            
+
             //Act/Assert
-            Assert.Equal("SomeValueAf", localizer["SomeKey"] );
-            Assert.Equal(localizer["SomeKey"], localizer["ReferenceSomeKey"] );
+            Assert.Equal("SomeValueAf", localizer["SomeKey"]);
+            Assert.Equal(localizer["SomeKey"], localizer["ReferenceSomeKey"]);
         }
-        
+
         [Theory]
         [MemberData(nameof(ContentSources))]
         public void SomeResourceFoundForNeutralVariantOfSpecifiedCulture_MultipleResources_ShouldGetValueFromNeutralVariantOfSpecifiedCultureIfExistsOtherwiseDefaultCulture(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
             mock.SetData("en-US", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValue", 
+                ["SomeKey"] = "SomeValue",
                 ["ReferenceSomeKey"] = "{{SomeKey}}-{{SomeKey}}"
             });
-            
+
             mock.SetData("es", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValueAf", 
+                ["SomeKey"] = "SomeValueAf",
             });
 
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("es-US");
 
             //Act/Assert
-            Assert.Equal("SomeValueAf", localizer["SomeKey"] );
-            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"] );
+            Assert.Equal("SomeValueAf", localizer["SomeKey"]);
+            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"]);
         }
-        
+
         [Theory]
         [MemberData(nameof(ContentSources))]
         public void SomeResourceFoundForNeutralVariantOfSpecifiedCulture_MultipleLayersOfResources_ShouldGetValueFromNeutralVariantOfSpecifiedCultureIfExistsOtherwiseDefaultCulture(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
             mock.SetData("en-US", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValue", 
+                ["SomeKey"] = "SomeValue",
                 ["ReferenceSomeKey"] = "{{SomeKey}}-{{SomeKey}}",
                 ["Reference_ReferenceSomeKey"] = "{{ReferenceSomeKey}}-{{ReferenceSomeKey}}",
             });
-            
+
             mock.SetData("es", new Dictionary<string, string>
             {
-                ["SomeKey"] = "SomeValueAf", 
+                ["SomeKey"] = "SomeValueAf",
             });
 
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("es-US");
 
             //Act/Assert
-            Assert.Equal("SomeValueAf", localizer["SomeKey"] );
-            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"] );
-            Assert.Equal($"{localizer["ReferenceSomeKey"]}-{localizer["ReferenceSomeKey"]}", localizer["Reference_ReferenceSomeKey"] );
+            Assert.Equal("SomeValueAf", localizer["SomeKey"]);
+            Assert.Equal($"{localizer["SomeKey"]}-{localizer["SomeKey"]}", localizer["ReferenceSomeKey"]);
+            Assert.Equal($"{localizer["ReferenceSomeKey"]}-{localizer["ReferenceSomeKey"]}", localizer["Reference_ReferenceSomeKey"]);
         }
-        
+
         [Theory]
         [MemberData(nameof(ContentSources))]
         public void ResourceNotFound_ShouldReturnEmptyValue(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
             mock.SetData("en-US", new Dictionary<string, string>
             {
@@ -605,18 +657,18 @@ namespace Content.Localization.Tests
             });
 
             //Act/Assert
-            Assert.Equal(string.Empty, localizer["SomeKeyThatDoesntExist"] );
-            Assert.Equal("", localizer["ReferenceSomeKeyThatDoesntExist"] );
+            Assert.Equal(string.Empty, localizer["SomeKeyThatDoesntExist"]);
+            Assert.Equal("", localizer["ReferenceSomeKeyThatDoesntExist"]);
         }
-        
+
         [Theory]
         [MemberData(nameof(ContentSources))]
         public void ResourceNotFound_MultipleResources_ShouldReturnEmptyValue(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
             mock.SetData("en-US", new Dictionary<string, string>
             {
@@ -624,20 +676,20 @@ namespace Content.Localization.Tests
             });
 
             //Act/Assert
-            Assert.Equal(string.Empty, localizer["SomeKeyThatDoesntExist"] );
-            Assert.Equal("-", localizer["ReferenceSomeKeyThatDoesntExist"] );
+            Assert.Equal(string.Empty, localizer["SomeKeyThatDoesntExist"]);
+            Assert.Equal("-", localizer["ReferenceSomeKeyThatDoesntExist"]);
         }
-        
+
         [Theory]
         [MemberData(nameof(ContentSources))]
         public void ResourceNotFound_MultipleLayersOfResources_ShouldReturnEmptyValue(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
-            
+
             mock.SetData("en-US", new Dictionary<string, string>
             {
                 ["ReferenceSomeKeyThatDoesntExist"] = "{{SomeKeyThatDoesntExist}}-{{SomeKeyThatDoesntExist}}",
@@ -655,11 +707,11 @@ namespace Content.Localization.Tests
         public void ResourceSelfReference_ShouldReturnSelfReferenceErrorMessage(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
-            
+
             mock.SetData("en-US", new Dictionary<string, string>
             {
                 ["SomeKey"] = "{{SomeKey}}",
@@ -668,17 +720,17 @@ namespace Content.Localization.Tests
             //Act/Assert
             Assert.Equal($"{SelfReferenceMessage} [SomeKey]", localizer["SomeKey"]);
         }
-        
+
         [Theory]
         [MemberData(nameof(ContentSources))]
         public void ResourceCircularReference_ShouldReturnCircularReferenceErrorMessage(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
-            
+
             mock.SetData("en-US", new Dictionary<string, string>
             {
                 ["SomeKey"] = "{{SomeKey2}}",
@@ -689,17 +741,17 @@ namespace Content.Localization.Tests
             Assert.Equal($"{CircularReferenceDetectionMessage} [SomeKey]", localizer["SomeKey"]);
             Assert.Equal($"{CircularReferenceDetectionMessage} [SomeKey2]", localizer["SomeKey2"]);
         }
-        
+
         [Theory]
         [MemberData(nameof(ContentSources))]
         public void ResourceCircularReference_Transitive_ShouldReturnCircularReferenceErrorMessage(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
-            
+
             mock.SetData("en-US", new Dictionary<string, string>
             {
                 ["SomeKey"] = "{{SomeKey2}}",
@@ -712,17 +764,17 @@ namespace Content.Localization.Tests
             Assert.Equal($"{CircularReferenceDetectionMessage} [SomeKey2]", localizer["SomeKey2"]);
             Assert.Equal($"{CircularReferenceDetectionMessage} [SomeKey3]", localizer["SomeKey3"]);
         }
-        
+
         [Theory]
         [MemberData(nameof(ContentSources))]
         public void ResourceCircularReference_Transitive2_ShouldReturnCircularReferenceErrorMessage(string name, Func<IContentSource> factory)
         {
             //Arrange
-            var source      = factory();
-            var mock        = GetMock(source);
-            var localizer   = new ContentLocalizer(source, "en-US");
+            var source = factory();
+            var mock = GetMock(source);
+            var localizer = new ContentLocalizer(source, "en-US");
 
-            
+
             mock.SetData("en-US", new Dictionary<string, string>
             {
                 ["SomeKey"] = "{{SomeKey2}}",
@@ -735,10 +787,10 @@ namespace Content.Localization.Tests
             Assert.Equal($"{CircularReferenceDetectionMessage} [SomeKey2]", localizer["SomeKey2"]);
             Assert.Equal($"{CircularReferenceDetectionMessage} [SomeKey3]", localizer["SomeKey3"]);
         }
-        
+
         MockContentSource GetMock(IContentSource source)
         {
-            while (source !=null )
+            while (source != null)
             {
                 if (source is MockContentSource mockContentSource)
                     return mockContentSource;
@@ -753,7 +805,7 @@ namespace Content.Localization.Tests
         {
             var source = new MockContentSource();
             source.SetVersion("1.0", new DateTime(2020, 1, 1));
-            source.SetData("en-US", new Dictionary<string, string> { { "A", "ValA"} });
+            source.SetData("en-US", new Dictionary<string, string> { { "A", "ValA" } });
 
             return source;
         }
@@ -766,10 +818,10 @@ namespace Content.Localization.Tests
             _location = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             Directory.CreateDirectory(_location);
         }
-        
+
         public void Dispose()
         {
-            if (_location!=null)
+            if (_location != null)
             {
                 Directory.Delete(_location, true);
 
