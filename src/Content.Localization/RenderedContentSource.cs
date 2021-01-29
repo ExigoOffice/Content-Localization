@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -28,8 +29,21 @@ namespace Content.Localization
         {
             var cultureInfo = CultureInfo.GetCultureInfo(cultureCode);
             var item = LayeredLanguageItemLookup(key, cultureInfo);
+
+            if (item != null && (!item.Enabled || !Between(DateTime.UtcNow, item.EnabledStartDate, item.EnabledEndDate)))
+                return new ContentItem { Name = item.Name, Value = "", Enabled = false };
+
             return LoadNestedResources(item, cultureInfo);
         }
+
+        private static bool Between(DateTime input, DateTime? date1 = null, DateTime? date2 = null)
+        {
+            if (!date1.HasValue || !date2.HasValue)
+                return true;
+
+            return input > date1 && input < date2;
+        }
+
         private ContentItem LayeredLanguageItemLookup(string key, CultureInfo cultureInfo)
         {
             var item = _memorySource.GetContentItem(key, cultureInfo.Name);
@@ -43,7 +57,6 @@ namespace Content.Localization
             }
             return item;
         }
-
         private ContentItem LoadNestedResources(ContentItem content, CultureInfo culture, HashSet<string> seen = null, StringBuilder builder = null, int stackDepth = 1)
         {
             if (!string.IsNullOrWhiteSpace(content?.Value))
@@ -77,9 +90,16 @@ namespace Content.Localization
                         continue;
                     }
                     var nestedItem = LayeredLanguageItemLookup(resourceName, culture);
-                    // Replace Resource Token With Actual Value
-                    builder.Replace(match.Value, nestedItem?.Value ?? string.Empty);
-                    LoadNestedResources(nestedItem, culture, seen, builder, stackDepth + 1);
+                    if (nestedItem?.Enabled ?? true)
+                    {
+                        // Replace Resource Token With Actual Value
+                        builder.Replace(match.Value, nestedItem?.Value ?? string.Empty);
+                        LoadNestedResources(nestedItem, culture, seen, builder, stackDepth + 1);
+                    }
+                    else
+                    {
+                        builder.Replace(match.Value, string.Empty);
+                    }
                 }
                 seen.Remove(contentItem.Name);
                 if (stackDepth == 1)

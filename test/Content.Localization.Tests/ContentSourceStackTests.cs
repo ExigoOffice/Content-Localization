@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -78,8 +79,28 @@ namespace Content.Localization.Tests
             }
         }
 
-        
 
+        [Theory]
+        [MemberData(nameof(ContentSources))]
+        public void Disabled_ShouldWriteBlankForResource(string name, Func<IContentSource> factory)
+        {
+            //Arrange
+            var source      = factory();
+            var mock        = GetMock(source);
+            var localizer   = new ContentLocalizer(source, "en-US");
+            mock.SetData("en-US", new Dictionary<string, string>
+            {
+                ["SomeKey"] = "SomeValue", 
+                ["ReferenceSomeKey"] = "{{SomeKey}}"
+            });
+            var item = mock.GetAllContentItemsAsync("en-US")
+                .ContinueWith(task => task.Result.First(i => i.Name == "SomeKey"))
+                .ConfigureAwait(false).GetAwaiter().GetResult();
+            item.Enabled = false;
+            //Act/Assert
+            Assert.Equal("", localizer["SomeKey"] );
+            Assert.Equal(localizer["SomeKey"], localizer["ReferenceSomeKey"] );
+        }
         
         [Theory]
         [MemberData(nameof(ContentSources))]
