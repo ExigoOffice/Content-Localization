@@ -9,7 +9,7 @@ variables:
   buildConfiguration: 'Release'
 
 pool:
-  vmImage: 'Exigo-Platform'
+  vmImage: Exigo-Platform
 
 steps:
 - task: UseDotNet@2
